@@ -1,35 +1,30 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import LoginPage from './pages/LoginPage';
 
 function App() {
-  const [count, setCount] = useState(0)
+    return (
+        <div
+            className="
+        min-h-screen            // Asegura que ocupe toda la altura de la pantalla
+        flex                    // Usa Flexbox para centrar contenido
+        items-center            // Centra verticalmente
+        justify-center          // Centra horizontalmente
+        bg-gray-900             // Color de fondo de respaldo
+        bg-cover                // La imagen de fondo cubrirá todo el contenedor
+        bg-center               // Centra la imagen de fondo
+        bg-no-repeat            // Evita que la imagen se repita
+        relative                // Necesario para posicionar el overlay absoluto
+      "
+            style={{backgroundImage: "url('/src/assets/FondoLogin.jpg')"}} // <-- Ruta de tu imagen de fondo
+        >
+            {/* Overlay oscuro para mejorar la legibilidad del formulario */}
+            <div className="absolute inset-0 bg-black opacity-60"></div>
 
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+            {/* Contenedor para LoginPage, encima del overlay */}
+            <div className="relative z-10">
+                <LoginPage />
+            </div>
+        </div>
+    );
 }
 
-export default App
+export default App;
