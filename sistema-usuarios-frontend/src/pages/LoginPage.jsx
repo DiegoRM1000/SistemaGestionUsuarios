@@ -1,7 +1,6 @@
-
-import { useState } from 'react';
+import {useState} from 'react';
 import axios from 'axios';
-import { FiEye, FiEyeOff } from 'react-icons/fi'; // Importa los íconos de ojo
+import {FiEye, FiEyeOff} from 'react-icons/fi'; // Importa los íconos de ojo
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -19,12 +18,12 @@ const LoginPage = () => {
                 password,
             });
 
-            const { token } = response.data;
+            const {token} = response.data;
             localStorage.setItem('jwtToken', token); // Guarda el token en el almacenamiento local
             console.log('Login exitoso!', token);
 
             // Muestra una notificación de éxito con una nueva 'key' para forzar la animación
-            setNotification({ message: '¡Inicio de sesión exitoso!', type: 'success', key: Date.now() });
+            setNotification({message: '¡Inicio de sesión exitoso!', type: 'success', key: Date.now()});
 
             // TODO: Aquí irá la lógica para redirigir al usuario al dashboard
             // Por ejemplo, con React Router DOM: navigate('/dashboard');
@@ -183,7 +182,7 @@ const LoginPage = () => {
                 mt-8             /* Ajuste de margen superior para alinear con el input */
               "
                         >
-                            {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />} {/* Renderiza el ícono */}
+                            {showPassword ? <FiEyeOff size={20}/> : <FiEye size={20}/>} {/* Renderiza el ícono */}
                         </button>
                     </div>
 
