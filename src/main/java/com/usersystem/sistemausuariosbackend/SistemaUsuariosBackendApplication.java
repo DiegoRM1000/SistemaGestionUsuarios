@@ -27,6 +27,7 @@ public class SistemaUsuariosBackendApplication {
 	@Bean
 	public CommandLineRunner run(RoleRepository roleRepository, UserRepository userRepository, PasswordEncoder passwordEncoder) {
 		return args -> {
+			//momentaneo para pruebas
 			// 1. Crear el rol ADMIN si no existe
 			if (roleRepository.findByName("ROLE_ADMIN").isEmpty()) {
 				Role adminRole = new Role();

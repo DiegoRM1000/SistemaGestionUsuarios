@@ -1,71 +1,80 @@
 package com.usersystem.sistemausuariosbackend.model;
 
-import jakarta.persistence.*; // Importa clases de JPA
-import lombok.Data; // Importa anotación @Data de Lombok
-import lombok.NoArgsConstructor; // Importa anotación @NoArgsConstructor de Lombok
-import lombok.AllArgsConstructor; // Importa anotación @AllArgsConstructor de Lombok
-import java.time.LocalDateTime; // Para manejar fechas y horas
-import java.util.HashSet; // Para el conjunto de roles
-import java.util.Set; // Interfaz para el conjunto de roles
+import jakarta.persistence.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
-@Entity // Indica que esta clase es una entidad JPA y se mapeará a una tabla de DB
-@Table(name = "users") // Especifica el nombre de la tabla en la DB
-@Data // Genera automáticamente getters, setters, toString, equals y hashCode con Lombok
-@NoArgsConstructor // Genera un constructor sin argumentos (requerido por JPA)
-@AllArgsConstructor // Genera un constructor con todos los argumentos
-
+@Entity
+@Table(name = "users", uniqueConstraints = {
+        // La restricción de unicidad para 'email' ya está correctamente definida.
+        // Esto asegura que no haya dos usuarios con el mismo correo electrónico.
+        @UniqueConstraint(columnNames = "email"),
+        // Si 'username' también debe ser único (aunque no lo usemos para login principal),
+        // esta restricción es correcta. Si no se requiere unicidad para username,
+        // podrías quitar esta línea:
+        @UniqueConstraint(columnNames = "username")
+})
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
-    @Id // Indica que este campo es la clave primaria
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // Estrategia para autoincrementar el ID
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false, length = 50) // Mapea a una columna, única, no nula, con longitud
+    // Mantenemos 'username' ya que tu estructura lo incluye.
+    // Aunque el login se hará por email, 'username' puede ser usado para otros propósitos.
+    @Column(unique = true, nullable = false, length = 50)
     private String username;
 
+    // ¡Este campo 'email' es el CRÍTICO para el login por correo!
+    // Ya lo tienes con 'unique = true' y 'nullable = false', lo cual es perfecto.
     @Column(unique = true, nullable = false, length = 100)
     private String email;
 
     @Column(nullable = false)
-    private String password; // ¡IMPORTANTE! Esta contraseña DEBE estar encriptada en DB.
+    private String password;
 
-    @Column(name = "first_name", length = 50) // Mapea a una columna con nombre diferente al campo Java
+    @Column(name = "first_name", length = 50)
     private String firstName;
 
     @Column(name = "last_name", length = 50)
     private String lastName;
 
     @Column(nullable = false)
-    private boolean enabled = true; // Indica si el usuario está habilitado (por defecto true)
+    private boolean enabled = true;
 
-    @Column(name = "two_factor_secret") // Clave secreta para autenticación de dos factores
+    @Column(name = "two_factor_secret")
     private String twoFactorSecret;
 
-    @Column(name = "two_factor_enabled", nullable = false) // Estado de 2FA para el usuario (por defecto false)
+    @Column(name = "two_factor_enabled", nullable = false)
     private boolean twoFactorEnabled = false;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt; // Fecha y hora de creación del usuario
+    private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt; // Última fecha y hora de actualización del usuario
+    private LocalDateTime updatedAt;
 
-    @ManyToMany(fetch = FetchType.EAGER) // Relación Muchos a Muchos con la entidad Role
-    // fetch = FetchType.EAGER significa que los roles se cargarán junto con el usuario
-    @JoinTable( // Configura la tabla intermedia (join table)
-            name = "user_roles", // Nombre de la tabla de unión en la DB
-            joinColumns = @JoinColumn(name = "user_id"), // Columna que mapea a la clave primaria de User
-            inverseJoinColumns = @JoinColumn(name = "role_id") // Columna que mapea a la clave primaria de Role
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
     )
-    private Set<Role> roles = new HashSet<>(); // Un Set para almacenar los roles del usuario
+    private Set<Role> roles = new HashSet<>();
 
-    // Métodos de ciclo de vida de JPA para gestionar timestamps automáticamente
-    @PrePersist // Se ejecuta antes de guardar una nueva entidad
+    @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
     }
 
-    @PreUpdate // Se ejecuta antes de actualizar una entidad existente
+    @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
