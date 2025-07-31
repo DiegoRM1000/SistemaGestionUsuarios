@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import axios from 'axios';
 import { FiEye, FiEyeOff } from 'react-icons/fi'; // Importa los íconos de ojo
 import { useNavigate } from 'react-router-dom'; // ¡Importa useNavigate!
+import { useAuth } from '../context/AuthContext'; // ¡Importa useAuth desde el contexto!
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -10,57 +10,44 @@ const LoginPage = () => {
     const [notification, setNotification] = useState(null); // Estado para las notificaciones: { message, type, key }
 
     const navigate = useNavigate(); // ¡Inicializa useNavigate!
+    const { login } = useAuth(); // ¡Obtiene la función 'login' del contexto!
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        setNotification(null); // Limpiar notificación anterior antes de un nuevo intento
+        setNotification(null);
 
         try {
-            const response = await axios.post('http://localhost:8080/api/auth/login', {
-                email,
-                password,
-            });
+            // ¡AHORA LLAMAMOS A LA FUNCIÓN LOGIN DEL CONTEXTO!
+            const result = await login(email, password);
 
-            // --- INICIO DE MODIFICACIÓN CLAVE ---
-            // El backend ahora envía { accessToken, tokenType, role }
-            const { accessToken, role } = response.data;
+            if (result.success) {
+                console.log('Login exitoso desde LoginPage!');
+                console.log('Rol del usuario:', result.role);
 
-            // Guarda el token en el almacenamiento local
-            localStorage.setItem('jwtToken', accessToken);
+                setNotification({ message: '¡Inicio de sesión exitoso!', type: 'success', key: Date.now() });
 
-            // ¡NUEVO! Guarda el rol del usuario en el almacenamiento local
-            localStorage.setItem('userRole', role);
-
-            console.log('Login exitoso!', accessToken);
-            console.log('Rol del usuario:', role); // Verifica que el rol se muestre en consola
-            // --- FIN DE MODIFICACIÓN CLAVE ---
-
-            setNotification({ message: '¡Inicio de sesión exitoso!', type: 'success', key: Date.now() });
-
-            // TODO: Aquí irá la lógica para redirigir al usuario al dashboard basada en el rol
-            // Por ejemplo, con React Router DOM: navigate('/dashboard');
-
-            // --- Lógica de redirección basada en rol ---
-            if (role === 'ROLE_ADMIN') {
-                navigate('/admin-dashboard');
-            } else if (role === 'ROLE_EMPLOYEE') {
-                navigate('/employee-dashboard');
-            } else {
-                // Para cualquier otro rol o rol por defecto
+                // ¡AHORA TODOS SE REDIRIGEN AL MISMO PUNTO DE ENTRADA DEL DASHBOARD LAYOUT!
                 navigate('/dashboard');
+
+            } else {
+                // Manejo de errores si el login desde el contexto falla
+                setNotification({
+                    message: `Error de inicio de sesión: ${result.message || 'Credenciales inválidas.'}`,
+                    type: 'error',
+                    key: Date.now(),
+                });
             }
-            // --- Fin lógica de redirección ---
 
         } catch (error) {
-            console.error('Login fallido:', error.response?.data || error.message);
+            // Este catch es para errores inesperados que no son manejados por la función login del contexto
+            console.error('Error inesperado durante el login:', error);
             setNotification({
-                message: `Error de inicio de sesión: ${error.response?.data?.message || 'Credenciales inválidas.'}`,
+                message: 'Ocurrió un error inesperado. Por favor, inténtalo de nuevo.',
                 type: 'error',
                 key: Date.now(),
             });
         }
     };
-
     return (
         <div
             className="
@@ -195,7 +182,7 @@ const LoginPage = () => {
                                 mt-8
                             "
                         >
-                            {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+                            {showPassword ? <FiEye size={20} /> : <FiEyeOff size={20} />}
                         </button>
                     </div>
 
