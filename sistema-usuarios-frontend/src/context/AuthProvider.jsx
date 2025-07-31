@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { AuthContext } from './AuthContext'; // ¡Importa AuthContext desde el nuevo archivo!
+import { toast } from 'react-toastify'; // ¡Importa toast!
+
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -24,6 +26,13 @@ export const AuthProvider = ({ children }) => {
                 },
             });
             setUser(response.data);
+
+            const userRoleFromServer = response.data.roles && response.data.roles.length > 0
+                ? response.data.roles[0].name
+                : 'ROLE_USER';
+            setRole(userRoleFromServer);
+            localStorage.setItem('userRole', userRoleFromServer);
+
         } catch (error) {
             console.error('Error al obtener los detalles del usuario:', error);
             localStorage.removeItem('jwtToken');
@@ -31,6 +40,7 @@ export const AuthProvider = ({ children }) => {
             setToken(null);
             setUser(null);
             setRole(null);
+            // Opcional: toast.error('Tu sesión ha expirado o es inválida. Por favor, inicia sesión de nuevo.');
 
         } finally {
             setIsLoading(false);
@@ -65,6 +75,7 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             console.error('Login fallido desde AuthProvider:', error);
             const errorMessage = error.response?.data?.message || 'Credenciales inválidas.';
+            toast.error(`Error de inicio de sesión: ${errorMessage}`); // ¡Muestra el toast de error!
             return { success: false, message: errorMessage };
         }
     };
@@ -75,7 +86,7 @@ export const AuthProvider = ({ children }) => {
         setToken(null);
         setRole(null);
         setUser(null);
-        // La redirección a /login se hará en PrivateRoute o en el componente que llama a logout
+        toast.info('Has cerrado sesión correctamente.');
     };
 
     const authContextValue = {

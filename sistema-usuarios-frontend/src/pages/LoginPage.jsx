@@ -2,19 +2,20 @@ import { useState } from 'react';
 import { FiEye, FiEyeOff } from 'react-icons/fi'; // Importa los íconos de ojo
 import { useNavigate } from 'react-router-dom'; // ¡Importa useNavigate!
 import { useAuth } from '../context/AuthContext'; // ¡Importa useAuth desde el contexto!
+import { toast } from 'react-toastify'; // ¡Importa toast para el éxito!
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false); // Estado para la visibilidad de la contraseña
-    const [notification, setNotification] = useState(null); // Estado para las notificaciones: { message, type, key }
+
 
     const navigate = useNavigate(); // ¡Inicializa useNavigate!
     const { login } = useAuth(); // ¡Obtiene la función 'login' del contexto!
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        setNotification(null);
+
 
         try {
             // ¡AHORA LLAMAMOS A LA FUNCIÓN LOGIN DEL CONTEXTO!
@@ -24,28 +25,21 @@ const LoginPage = () => {
                 console.log('Login exitoso desde LoginPage!');
                 console.log('Rol del usuario:', result.role);
 
-                setNotification({ message: '¡Inicio de sesión exitoso!', type: 'success', key: Date.now() });
+                toast.success('¡Inicio de sesión exitoso!'); // ¡Muestra el toast de éxito!
 
                 // ¡AHORA TODOS SE REDIRIGEN AL MISMO PUNTO DE ENTRADA DEL DASHBOARD LAYOUT!
                 navigate('/dashboard');
 
             } else {
-                // Manejo de errores si el login desde el contexto falla
-                setNotification({
-                    message: `Error de inicio de sesión: ${result.message || 'Credenciales inválidas.'}`,
-                    type: 'error',
-                    key: Date.now(),
-                });
+                // El error ya se maneja y notifica desde AuthProvider con toast.error
+                console.log('Login fallido (notificado desde AuthProvider):', result.message);
+                // ¡ELIMINA TODA LA LÓGICA DE setNotification AQUÍ!
             }
 
         } catch (error) {
-            // Este catch es para errores inesperados que no son manejados por la función login del contexto
-            console.error('Error inesperado durante el login:', error);
-            setNotification({
-                message: 'Ocurrió un error inesperado. Por favor, inténtalo de nuevo.',
-                type: 'error',
-                key: Date.now(),
-            });
+            // Este catch es para errores inesperados de red o ejecución local
+            console.error('Error inesperado durante el login en LoginPage:', error);
+            toast.error('Ocurrió un error inesperado. Por favor, inténtalo de nuevo.'); // Notificación para errores no manejados
         }
     };
     return (
@@ -75,25 +69,6 @@ const LoginPage = () => {
                 </p>
             </div>
 
-            {notification && (
-                <div
-                    key={notification.key}
-                    className={`
-                        p-4 mb-6 rounded-lg font-medium text-center relative overflow-hidden
-                        ${notification.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'}
-                        shadow-lg
-                        transform translate-y-0 opacity-100 transition-all duration-300 ease-in-out
-                    `}
-                >
-                    <div
-                        className={`absolute inset-0 opacity-20
-                            ${notification.type === 'success' ? 'bg-green-700' : 'bg-red-700'}
-                            transform scale-x-0 origin-left animate-notification-fill
-                        `}
-                    ></div>
-                    <span className="relative z-10">{notification.message}</span>
-                </div>
-            )}
 
             <div className="my-6 text-left">
                 <form onSubmit={handleLogin}>
