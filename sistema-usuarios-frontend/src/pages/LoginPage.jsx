@@ -61,10 +61,10 @@ const LoginPage = () => {
             "
         >
             <div className="text-center mb-10 bg-gray-300 rounded-xl p-4 ">
-                <h2 className="text-5xl font-extrabold text-gray-900 mb-2 tracking-tight">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mb-2 tracking-tight">
                     Bienvenido al Sistema
                 </h2>
-                <p className="text-lg text-gray-700">
+                <p className="text-base sm:text-lg text-gray-700">
                     Inicia sesión en tu cuenta
                 </p>
             </div>

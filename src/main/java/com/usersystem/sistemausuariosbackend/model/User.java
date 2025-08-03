@@ -1,21 +1,18 @@
+// src/main/java/com/usersystem/sistemausuariosbackend/model/User.java
 package com.usersystem.sistemausuariosbackend.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+// import java.util.HashSet; // Ya no necesitamos Set
+// import java.util.Set;     // Ya no necesitamos Set
 
 @Entity
 @Table(name = "users", uniqueConstraints = {
-        // La restricción de unicidad para 'email' ya está correctamente definida.
-        // Esto asegura que no haya dos usuarios con el mismo correo electrónico.
         @UniqueConstraint(columnNames = "email"),
-        // Si 'username' también debe ser único (aunque no lo usemos para login principal),
-        // esta restricción es correcta. Si no se requiere unicidad para username,
-        // podrías quitar esta línea:
         @UniqueConstraint(columnNames = "username")
 })
 @Data
@@ -26,13 +23,9 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Mantenemos 'username' ya que tu estructura lo incluye.
-    // Aunque el login se hará por email, 'username' puede ser usado para otros propósitos.
     @Column(unique = true, nullable = false, length = 50)
     private String username;
 
-    // ¡Este campo 'email' es el CRÍTICO para el login por correo!
-    // Ya lo tienes con 'unique = true' y 'nullable = false', lo cual es perfecto.
     @Column(unique = true, nullable = false, length = 100)
     private String email;
 
@@ -44,6 +37,15 @@ public class User {
 
     @Column(name = "last_name", length = 50)
     private String lastName;
+
+    @Column(name = "dni", unique = true, length = 15)
+    private String dni;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
+    @Column(name = "phone_number", length = 9)
+    private String phoneNumber;
 
     @Column(nullable = false)
     private boolean enabled = true;
@@ -60,13 +62,11 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "user_roles",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    private Set<Role> roles = new HashSet<>();
+    // --- CAMBIO CLAVE: Relación Many-to-One con Role ---
+    @ManyToOne(fetch = FetchType.EAGER, optional = false) // FetchType.EAGER para cargar el rol inmediatamente
+    @JoinColumn(name = "role_id", nullable = false) // Columna 'role_id' en la tabla 'users', no puede ser nula
+    private Role role; // Un solo objeto Role, no un Set
+    // --- FIN CAMBIO CLAVE ---
 
     @PrePersist
     protected void onCreate() {

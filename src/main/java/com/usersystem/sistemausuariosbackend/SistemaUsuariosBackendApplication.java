@@ -1,19 +1,22 @@
+// src/main/java/com/usersystem/sistemausuariosbackend/SistemaUsuariosBackendApplication.java
 package com.usersystem.sistemausuariosbackend;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import com.usersystem.sistemausuariosbackend.model.Role; // Importa Role
-import com.usersystem.sistemausuariosbackend.model.User; // Importa User
-import com.usersystem.sistemausuariosbackend.repository.RoleRepository; // Importa RoleRepository
-import com.usersystem.sistemausuariosbackend.repository.UserRepository; // Importa UserRepository
-import org.springframework.boot.CommandLineRunner; // Importa CommandLineRunner
+import com.usersystem.sistemausuariosbackend.model.Role;
+import com.usersystem.sistemausuariosbackend.model.User;
+import com.usersystem.sistemausuariosbackend.repository.RoleRepository;
+import com.usersystem.sistemausuariosbackend.repository.UserRepository;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
-import org.springframework.security.crypto.password.PasswordEncoder; // Importa PasswordEncoder
+import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDate; // Importar LocalDate
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+// Ya no necesitamos HashSet ni Set ni Collections
+// import java.util.Collections;
+// import java.util.HashSet;
+// import java.util.Set;
 
 
 @SpringBootApplication
@@ -27,50 +30,86 @@ public class SistemaUsuariosBackendApplication {
 	@Bean
 	public CommandLineRunner run(RoleRepository roleRepository, UserRepository userRepository, PasswordEncoder passwordEncoder) {
 		return args -> {
-			//momentaneo para pruebas
-			// 1. Crear el rol ADMIN si no existe
-			if (roleRepository.findByName("ROLE_ADMIN").isEmpty()) {
-				Role adminRole = new Role();
-				adminRole.setName("ROLE_ADMIN");
-				roleRepository.save(adminRole);
-				System.out.println("Rol ROLE_ADMIN creado.");
-			}
+			// 1. Crear los roles si no existen
+			Role adminRole = roleRepository.findByName("ROLE_ADMIN")
+					.orElseGet(() -> {
+						Role newRole = new Role();
+						newRole.setName("ROLE_ADMIN");
+						System.out.println("Rol ROLE_ADMIN creado.");
+						return roleRepository.save(newRole);
+					});
 
-			// 2. Crear el rol EMPLOYEE (o USER) si no existe
-			if (roleRepository.findByName("ROLE_EMPLOYEE").isEmpty()) {
-				Role employeeRole = new Role();
-				employeeRole.setName("ROLE_EMPLOYEE");
-				roleRepository.save(employeeRole);
-				System.out.println("Rol ROLE_EMPLOYEE creado.");
-			}
+			Role employeeRole = roleRepository.findByName("ROLE_EMPLOYEE")
+					.orElseGet(() -> {
+						Role newRole = new Role();
+						newRole.setName("ROLE_EMPLOYEE");
+						System.out.println("Rol ROLE_EMPLOYEE creado.");
+						return roleRepository.save(newRole);
+					});
 
-			// 3. Crear un usuario administrador si no existe
+			Role supervisorRole = roleRepository.findByName("ROLE_SUPERVISOR")
+					.orElseGet(() -> {
+						Role newRole = new Role();
+						newRole.setName("ROLE_SUPERVISOR");
+						System.out.println("Rol ROLE_SUPERVISOR creado.");
+						return roleRepository.save(newRole);
+					});
+
+
+			// 3. Crear usuarios de prueba si no existen con todos los datos
 			if (userRepository.findByUsername("admin").isEmpty()) {
 				User adminUser = new User();
 				adminUser.setUsername("admin");
 				adminUser.setEmail("admin@example.com");
-				adminUser.setPassword(passwordEncoder.encode("adminpassword")); // Contraseña encriptada
+				adminUser.setPassword(passwordEncoder.encode("adminpassword"));
 				adminUser.setFirstName("Super");
 				adminUser.setLastName("Admin");
+				adminUser.setDni("12345678"); // DNI de 8 caracteres
+				adminUser.setDateOfBirth(LocalDate.of(1985, 5, 15)); // Fecha de nacimiento
+				adminUser.setPhoneNumber("987654321"); // Teléfono de 9 caracteres
 				adminUser.setEnabled(true);
 				adminUser.setCreatedAt(LocalDateTime.now());
 				adminUser.setUpdatedAt(LocalDateTime.now());
-
-				// Asignar el rol ADMIN al usuario
-				Role adminRole = roleRepository.findByName("ROLE_ADMIN").orElseThrow(() -> new RuntimeException("ROLE_ADMIN not found!"));
-				Set<Role> roles = new HashSet<>();
-				roles.add(adminRole);
-				adminUser.setRoles(roles);
-
+				adminUser.setRole(adminRole);
 				userRepository.save(adminUser);
 				System.out.println("Usuario 'admin' creado con rol ROLE_ADMIN.");
+			}
+
+			if (userRepository.findByUsername("empleado").isEmpty()) {
+				User employeeUser = new User();
+				employeeUser.setUsername("empleado");
+				employeeUser.setEmail("empleado@example.com");
+				employeeUser.setPassword(passwordEncoder.encode("password"));
+				employeeUser.setFirstName("Juan");
+				employeeUser.setLastName("Perez");
+				employeeUser.setDni("87654321"); // DNI de 8 caracteres
+				employeeUser.setDateOfBirth(LocalDate.of(1990, 10, 20)); // Fecha de nacimiento
+				employeeUser.setPhoneNumber("912345678"); // Teléfono de 9 caracteres
+				employeeUser.setEnabled(true);
+				employeeUser.setCreatedAt(LocalDateTime.now());
+				employeeUser.setUpdatedAt(LocalDateTime.now());
+				employeeUser.setRole(employeeRole);
+				userRepository.save(employeeUser);
+				System.out.println("Usuario 'empleado' creado con rol ROLE_EMPLOYEE.");
+			}
+
+			if (userRepository.findByUsername("supervisor").isEmpty()) {
+				User supervisorUser = new User();
+				supervisorUser.setUsername("supervisor");
+				supervisorUser.setEmail("supervisor@example.com");
+				supervisorUser.setPassword(passwordEncoder.encode("password"));
+				supervisorUser.setFirstName("Ana");
+				supervisorUser.setLastName("Gomez");
+				supervisorUser.setDni("45678901"); // DNI de 8 caracteres
+				supervisorUser.setDateOfBirth(LocalDate.of(1988, 7, 25)); // Fecha de nacimiento
+				supervisorUser.setPhoneNumber("954321098"); // Teléfono de 9 caracteres
+				supervisorUser.setEnabled(true);
+				supervisorUser.setCreatedAt(LocalDateTime.now());
+				supervisorUser.setUpdatedAt(LocalDateTime.now());
+				supervisorUser.setRole(supervisorRole);
+				userRepository.save(supervisorUser);
+				System.out.println("Usuario 'supervisor' creado con rol ROLE_SUPERVISOR.");
 			}
 		};
 	}
 }
-
-
-
-
-
-

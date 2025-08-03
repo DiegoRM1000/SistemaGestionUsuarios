@@ -18,8 +18,8 @@ import ProfilePage from './components/profile/ProfilePage';
 
 const AppRoutes = () => {
     return (
-        <AuthProvider>
-            <Router>
+        <Router>
+            <AuthProvider>
                 <Routes>
                     <Route path="/login" element={<LoginLayout />} />
 
@@ -45,8 +45,9 @@ const AppRoutes = () => {
                     <Route path="/" element={<Navigate to="/login" replace />} />
                     <Route path="*" element={<h1>404 - Página No Encontrada</h1>} />
                 </Routes>
-            </Router>
-        </AuthProvider>
+            </AuthProvider>
+        </Router>
+
     );
 };
 

@@ -52,33 +52,31 @@ const DashboardPage = () => {
             : 'US';
 
     return (
+        // Contenedor principal del dashboard - Asegura que ocupe al menos toda la altura de la pantalla
         <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900">
-            {/* Sidebar para pantallas grandes */}
+            {/* Sidebar para pantallas grandes y móviles */}
             <aside
                 className={`
-                    w-64 bg-gray-800 dark:bg-gray-900 text-white flex-shrink-0
-                    transform transition-transform duration-300 ease-in-out
-                    ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-                    md:translate-x-0 md:relative absolute inset-y-0 left-0 z-30
-                `}
+        fixed md:relative
+        top-0 left-0 z-30
+        w-64 h-[100dvh]
+        bg-gray-800 dark:bg-gray-900 text-white
+        flex-shrink-0
+        transform transition-transform duration-300 ease-in-out
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:translate-x-0
+        overflow-y-auto
+    `}
             >
                 <div className="p-6">
-                    {/* Espacio para el Logo de la Empresa */}
                     <div className="mb-8 flex justify-center items-center">
-                        {/* Puedes usar una etiqueta img si tienes el logo, o un div con un icono */}
                         <img
-                            src="/src/assets/LogoEmpresa1.png" // **Asegúrate de poner la ruta correcta de tu logo**
+                            src="/src/assets/LogoEmpresa1.png"
                             alt="Logo de la Empresa"
-                            className="h-16 w-auto" // Ajusta el tamaño según tu logo
+                            className="h-16 w-auto"
                         />
-                        {/* O si prefieres solo texto con un estilo de logo: */}
-                        {/* <span className="text-3xl font-extrabold text-blue-400">Mi Empresa</span> */}
                     </div>
-                    {/* <h1 className="text-3xl font-extrabold text-blue-400 mb-8 text-center">
-                        Sistema Admin // Este ya no es necesario si usas un logo
-                    </h1> */}
                     <nav className="space-y-3">
-                        {/* Elementos de navegación condicionales */}
                         <Link to="/dashboard" className="flex items-center p-3 rounded-lg text-gray-200 hover:bg-gray-700 dark:hover:bg-gray-800 transition duration-200 group">
                             <FiHome className="mr-3 text-lg group-hover:text-blue-400 transition-colors" />
                             <span className="font-medium">Inicio</span>
@@ -116,13 +114,13 @@ const DashboardPage = () => {
             {/* Overlay para el sidebar en móviles */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
+                    className="fixed inset-0 bg-black opacity-20 z-20 md:hidden" // <--- Z-index es importante aquí
                     onClick={() => setSidebarOpen(false)}
                 ></div>
             )}
 
-            {/* Contenido principal */}
-            <div className="flex-grow flex flex-col">
+            {/* Contenido principal - Asegúrate de que crezca para ocupar el espacio restante */}
+            <div className="flex-grow flex flex-col"> {/* Este div ya tiene flex-grow */}
                 {/* Navbar para pantallas grandes y botón de menú para móviles */}
                 <header className="bg-white dark:bg-gray-800 shadow-md p-4 flex justify-between items-center z-20">
                     <button
@@ -137,14 +135,10 @@ const DashboardPage = () => {
 
                     {/* Ícono de Notificaciones y User Avatar / Dropdown */}
                     <div className="flex items-center space-x-4">
-                        {/* Ícono de Notificaciones */}
                         <button className="relative p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none">
                             <FiBell className="text-2xl" />
-                            {/* Opcional: Indicador de notificaciones nuevas */}
-                            {/* <span className="absolute top-0 right-0 block h-2 w-2 rounded-full ring-2 ring-white bg-red-500"></span> */}
                         </button>
 
-                        {/* User Avatar / Dropdown */}
                         <div className="relative" ref={dropdownRef}>
                             <button
                                 onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -180,7 +174,7 @@ const DashboardPage = () => {
                 </header>
 
                 {/* Área de contenido dinámico */}
-                <main className="flex-grow p-6 bg-gray-100 dark:bg-gray-900">
+                <main className="flex-grow p-6 bg-gray-100 dark:bg-gray-900 overflow-y-auto"> {/* <--- Opcional: para contenido largo */}
                     <Outlet />
                 </main>
             </div>
