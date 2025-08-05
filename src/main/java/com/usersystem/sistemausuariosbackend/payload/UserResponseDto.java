@@ -1,11 +1,10 @@
 // src/main/java/com/usersystem/sistemausuariosbackend/payload/UserResponseDto.java
 package com.usersystem.sistemausuariosbackend.payload;
 
-import com.usersystem.sistemausuariosbackend.model.Role; // Todavía necesitamos Role para el constructor
+import com.usersystem.sistemausuariosbackend.model.Role;
+import com.usersystem.sistemausuariosbackend.model.User; // <-- ¡Importar el modelo User!
 import lombok.Data;
 import java.time.LocalDate;
-// import java.util.Set; // Ya no necesitamos Set
-// import java.util.stream.Collectors; // Ya no necesitamos Collectors
 
 @Data
 public class UserResponseDto {
@@ -17,7 +16,7 @@ public class UserResponseDto {
     private LocalDate dateOfBirth;
     private String phoneNumber;
     private boolean enabled;
-    private String role; // --- CAMBIO CLAVE: Ahora es un String, no un Set<String> ---
+    private String role;
 
     public UserResponseDto(
             Long id,
@@ -28,7 +27,6 @@ public class UserResponseDto {
             LocalDate dateOfBirth,
             String phoneNumber,
             boolean enabled,
-            // --- CAMBIO CLAVE: Ahora acepta un solo objeto Role ---
             Role role) {
         this.id = id;
         this.firstName = firstName;
@@ -38,7 +36,27 @@ public class UserResponseDto {
         this.dateOfBirth = dateOfBirth;
         this.phoneNumber = phoneNumber;
         this.enabled = enabled;
-        // --- CAMBIO CLAVE: Mapea directamente el nombre del rol ---
-        this.role = (role != null) ? role.getName() : null; // Si el rol es nulo (no debería serlo por @ManyToOne optional=false), se puede poner a null o un default
+        this.role = (role != null) ? role.getName() : null;
+    }
+
+    /**
+     * Método estático de fábrica para crear un DTO a partir de un objeto User.
+     * Esto resuelve el error de 'Cannot resolve method fromUser'.
+     *
+     * @param user El objeto User desde el que se crearán los datos del DTO.
+     * @return Una nueva instancia de UserResponseDto.
+     */
+    public static UserResponseDto fromUser(User user) {
+        return new UserResponseDto(
+                user.getId(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getEmail(),
+                user.getDni(),
+                user.getDateOfBirth(),
+                user.getPhoneNumber(),
+                user.isEnabled(),
+                user.getRole()
+        );
     }
 }

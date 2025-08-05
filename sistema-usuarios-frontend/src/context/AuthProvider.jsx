@@ -1,61 +1,31 @@
-// src/context/AuthProvider.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { AuthContext } from './AuthContext';
 import { toast } from 'react-toastify';
-import apiClient, { setAuthDataForInterceptors } from '../utils/axiosConfig';
+import { setAuthDataForInterceptors } from '../utils/axiosConfig';
 import { useNavigate } from 'react-router-dom';
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
+    // Inicializamos el estado del usuario y los roles con los valores de localStorage.
+    // Usamos un estado para isLoading que será true al principio para evitar el renderizado prematuro.
+    const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')) || null);
     const [token, setToken] = useState(localStorage.getItem('jwtToken'));
-    const [role, setRole] = useState(localStorage.getItem('userRole'));
+    // El backend devuelve un solo rol, lo almacenamos en un array para consistencia
+    const [userRoles, setUserRoles] = useState(localStorage.getItem('userRoles') ? JSON.parse(localStorage.getItem('userRoles')) : []);
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
     const logout = useCallback(() => {
         localStorage.removeItem('jwtToken');
+        localStorage.removeItem('userRoles');
         localStorage.removeItem('userRole');
+        localStorage.removeItem('user');
         setToken(null);
-        setRole(null);
+        setUserRoles([]);
         setUser(null);
         toast.info('Has cerrado sesión correctamente.');
-    }, []);
-
-    const fetchUserDetails = useCallback(async (authToken) => {
-        setIsLoading(true);
-        if (!authToken) {
-            setUser(null);
-            setRole(null);
-            setIsLoading(false);
-            return;
-        }
-        try {
-            const response = await apiClient.get('/users/me');
-            setUser(response.data);
-
-            // --- CAMBIO AQUÍ: El backend ahora envía los roles como un Set<String> ---
-            // Tomamos el primer rol del Set y lo usamos
-            const userRoleFromServer = response.data.roles && response.data.roles.length > 0
-                ? response.data.roles[0] // Accedemos al primer elemento del array de roles
-                : 'ROLE_USER'; // Rol por defecto si no se encuentra ninguno
-
-            setRole(userRoleFromServer);
-            localStorage.setItem('userRole', userRoleFromServer);
-
-        } catch (error) {
-            console.error('Error al obtener los detalles del usuario:', error);
-            if (error.response?.status !== 401) {
-                localStorage.removeItem('jwtToken');
-                localStorage.removeItem('userRole');
-                setToken(null);
-                setUser(null);
-                setRole(null);
-            }
-        } finally {
-            setIsLoading(false);
-        }
-    }, [setRole, setToken, setUser, setIsLoading]);
+        navigate('/login');
+    }, [navigate]);
 
     const login = useCallback(async (email, password) => {
         try {
@@ -64,51 +34,85 @@ export const AuthProvider = ({ children }) => {
                 password,
             });
 
-            const newAccessToken = response.data.accessToken;
+            const { accessToken, id, firstName, lastName, email: userEmail, dni, role } = response.data;
 
-            // --- ¡EL CAMBIO CRÍTICO ESTÁ AQUÍ! ---
-            // Tu backend devuelve un array de roles, no un solo campo 'role'.
-            // Debemos obtener el primer rol del array para guardarlo.
-            const newUserRole = response.data.roles && response.data.roles.length > 0
-                ? response.data.roles[0]
-                : 'ROLE_USER'; // Usamos un valor por defecto seguro
+            const userFromLogin = {
+                id,
+                firstName,
+                lastName,
+                email: userEmail,
+                dni,
+                role
+            };
 
-            localStorage.setItem('jwtToken', newAccessToken);
-            localStorage.setItem('userRole', newUserRole);
+            const rolesFromLogin = [role];
 
-            setToken(newAccessToken);
-            setRole(newUserRole);
-            await fetchUserDetails(newAccessToken);
-            return { success: true, role: newUserRole };
+            localStorage.setItem('jwtToken', accessToken);
+            localStorage.setItem('user', JSON.stringify(userFromLogin));
+            localStorage.setItem('userRoles', JSON.stringify(rolesFromLogin));
+            localStorage.setItem('userRole', role);
+
+            setToken(accessToken);
+            setUser(userFromLogin);
+            setUserRoles(rolesFromLogin);
+
+            toast.success('¡Inicio de sesión exitoso!');
+            setIsLoading(false);
+            navigate('/dashboard');
+
+            return { success: true };
         } catch (error) {
             console.error('Login fallido desde AuthProvider:', error);
-            const errorMessage = error.response?.data?.message || 'Credenciales inválidas.';
-            toast.error(`Error de inicio de sesión: ${errorMessage}`);
+            let errorMessage = 'Error desconocido al iniciar sesión.';
+            if (error.response) {
+                if (error.response.status === 401) {
+                    errorMessage = 'Credenciales inválidas. Por favor, verifica tu email y contraseña.';
+                } else if (error.response.data && error.response.data.message) {
+                    errorMessage = error.response.data.data;
+                } else {
+                    errorMessage = `Error ${error.response.status}: ${error.response.statusText}`;
+                }
+            } else if (error.request) {
+                errorMessage = 'No se pudo conectar con el servidor. Verifica tu conexión a internet o la disponibilidad del servidor.';
+            } else {
+                errorMessage = error.message;
+            }
+            toast.error(errorMessage);
+            setIsLoading(false);
             return { success: false, message: errorMessage };
         }
-    }, [fetchUserDetails, setRole, setToken]);
+    }, [navigate]);
 
     useEffect(() => {
         setAuthDataForInterceptors(logout, navigate);
     }, [logout, navigate]);
 
     useEffect(() => {
-        if (token) {
-            fetchUserDetails(token);
-        } else {
-            setIsLoading(false);
+        const storedToken = localStorage.getItem('jwtToken');
+        const storedUser = localStorage.getItem('user');
+        const storedRoles = localStorage.getItem('userRoles');
+
+        // Se verifica si todos los datos necesarios están en localStorage
+        // Si es así, se actualiza el estado.
+        if (storedToken && storedUser && storedRoles) {
+            setToken(storedToken);
+            setUser(JSON.parse(storedUser));
+            setUserRoles(JSON.parse(storedRoles));
         }
-    }, [token, fetchUserDetails]);
+
+        // Finalmente, una vez que el useEffect ha terminado de evaluar
+        // el estado de localStorage, se establece isLoading en false.
+        setIsLoading(false);
+    }, []);
 
     const authContextValue = {
         isAuthenticated: !!token,
         user,
-        role,
+        userRoles,
         token,
         isLoading,
         login,
         logout,
-        fetchUserDetails
     };
 
     return (

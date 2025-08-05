@@ -1,19 +1,17 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
-import { AuthProvider } from './context/AuthProvider'; // ¡Importa el AuthProvider!
-
-// Asegúrate de crear estas carpetas y archivos en src/components/
+import { AuthProvider } from './context/AuthProvider';
 import DashboardPage from './pages/DashboardPage.jsx';
 import PrivateRoute from './components/auth/PrivateRoute';
 import LoginLayout from "./layouts/LoginLayout.jsx";
 import DashboardHome from './components/dashboard/DashboardHome';
+
+
 import UserManagementPage from './components/users/UserManagementPage';
 import ReportsPage from './components/reports/ReportsPage';
 import LogsPage from './components/logs/LogsPage';
 import ProfilePage from './components/profile/ProfilePage';
-
-
 
 
 const AppRoutes = () => {
@@ -27,17 +25,18 @@ const AppRoutes = () => {
                     <Route
                         path="/dashboard"
                         element={
-                            <PrivateRoute requiredRoles={['ROLE_ADMIN', 'ROLE_EMPLOYEE', 'ROLE_SUPERVISOR']}>
-                                <DashboardPage /> {/* Renderiza el layout principal del dashboard */}
+                            // CORRECCIÓN CLAVE: Se actualizaron los nombres de los roles requeridos
+                            <PrivateRoute requiredRoles={['ADMIN', 'EMPLEADO', 'SUPERVISOR']}>
+                                <DashboardPage />
                             </PrivateRoute>
                         }
                     >
                         {/* Rutas anidadas que se renderizan dentro de <Outlet /> en DashboardPage */}
-                        <Route index element={<DashboardHome />} /> {/* /dashboard (ruta por defecto) */}
-                        <Route path="users" element={<UserManagementPage />} /> {/* /dashboard/users */}
-                        <Route path="reports" element={<ReportsPage />} /> {/* /dashboard/reports */}
-                        <Route path="logs" element={<LogsPage />} /> {/* /dashboard/logs */}
-                        <Route path="profile" element={<ProfilePage />} /> {/* /dashboard/profile */}
+                        <Route index element={<DashboardHome />} />
+                        <Route path="users" element={<UserManagementPage />} />
+                        <Route path="reports" element={<ReportsPage />} />
+                        <Route path="logs" element={<LogsPage />} />
+                        <Route path="profile" element={<ProfilePage />} />
                     </Route>
 
 
@@ -47,7 +46,6 @@ const AppRoutes = () => {
                 </Routes>
             </AuthProvider>
         </Router>
-
     );
 };
 

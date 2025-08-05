@@ -1,96 +1,90 @@
-// src/main/java/com/usersystem/sistemausuariosbackend/controller/UserController.java
 package com.usersystem.sistemausuariosbackend.controller;
 
 import com.usersystem.sistemausuariosbackend.model.User;
 import com.usersystem.sistemausuariosbackend.payload.UserResponseDto;
 import com.usersystem.sistemausuariosbackend.repository.UserRepository;
+import com.usersystem.sistemausuariosbackend.service.LogService;
+import com.usersystem.sistemausuariosbackend.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime; // Necesario para setUpdatedAt
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
-import org.springframework.http.HttpStatus; // ¡AÑADE ESTA LÍNEA!
 
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
 
     private final UserRepository userRepository;
+    private final LogService logService;
+    private final UserService userService;
 
-    public UserController(UserRepository userRepository) {
+    public UserController(UserRepository userRepository, LogService logService, UserService userService) {
         this.userRepository = userRepository;
+        this.logService = logService;
+        this.userService = userService;
     }
 
-    @GetMapping
-    @PreAuthorize("hasRole('ADMIN')") // Usar hasRole() sin el prefijo "ROLE_" si tu UserDetailsServiceImpl ya lo añade
-    public ResponseEntity<List<UserResponseDto>> getAllUsers() {
-        List<User> users = userRepository.findAll();
-        List<UserResponseDto> userDtos = users.stream()
-                .map(user -> new UserResponseDto(
-                        user.getId(),
-                        user.getFirstName(),
-                        user.getLastName(),
-                        user.getEmail(),
-                        user.getDni(),
-                        user.getDateOfBirth(),
-                        user.getPhoneNumber(),
-                        user.isEnabled(),
-                        user.getRole())) // Accede directamente a user.getRole()
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(userDtos);
-    }
-
-    @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponseDto> getUserById(@PathVariable Long id) {
-        Optional<User> user = userRepository.findById(id);
-        return user.map(u -> new UserResponseDto(
-                        u.getId(),
-                        u.getFirstName(),
-                        u.getLastName(),
-                        u.getEmail(),
-                        u.getDni(),
-                        u.getDateOfBirth(),
-                        u.getPhoneNumber(),
-                        u.isEnabled(),
-                        u.getRole())) // Accede directamente a u.getRole()
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+    @GetMapping("/all")
+    // CORRECCIÓN: Se usa hasAnyAuthority para validar el rol sin el prefijo 'ROLE_'
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPERVISOR')")
+    public ResponseEntity<List<User>> getAllUsers() {
+        List<User> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
     }
 
     @GetMapping("/me")
     public ResponseEntity<UserResponseDto> getMyProfile(Authentication authentication) {
-        String email = authentication.getName();
-        Optional<User> user = userRepository.findByEmail(email);
-
-        return user.map(u -> new UserResponseDto(
-                        u.getId(),
-                        u.getFirstName(),
-                        u.getLastName(),
-                        u.getEmail(),
-                        u.getDni(),
-                        u.getDateOfBirth(),
-                        u.getPhoneNumber(),
-                        u.isEnabled(),
-                        u.getRole())) // Accede directamente a u.getRole()
+        String username = authentication.getName();
+        return userRepository.findByEmail(username)
+                .map(UserResponseDto::fromUser)
                 .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
+                .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
-    // --- MÉTODO MOVIDO DESDE AuthController ---
-    @PutMapping("/{userId}/status") // Ruta más RESTful para una acción específica sobre un recurso
-    @PreAuthorize("hasRole('ADMIN')") // Solo un ADMIN puede cambiar el estado de la cuenta
-    public ResponseEntity<?> updateUserStatus(@PathVariable Long userId, @RequestParam boolean enabled) {
-        return userRepository.findById(userId).map(user -> {
-            user.setEnabled(enabled);
-            user.setUpdatedAt(LocalDateTime.now()); // Asegúrate de actualizar el timestamp
-            userRepository.save(user);
-            return ResponseEntity.ok("User account " + (enabled ? "enabled" : "disabled") + " successfully.");
-        }).orElse(new ResponseEntity<>("User not found.", HttpStatus.NOT_FOUND));
+    @DeleteMapping("/{userId}")
+    // CORRECCIÓN: Se usa hasAuthority para validar el rol sin el prefijo 'ROLE_'
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long userId, Authentication authentication, HttpServletRequest request) {
+        String ipAddress = request.getRemoteAddr();
+        String currentUsername = authentication.getName();
+        Long currentUserId = userRepository.findByEmail(currentUsername).map(User::getId).orElse(null);
+
+        Optional<User> userToDelete = userRepository.findById(userId);
+        if (userToDelete.isPresent()) {
+            userService.deleteUser(userId);
+
+            String description = String.format("El usuario '%s' (ID: %d) ha sido eliminado.", userToDelete.get().getUsername(), userToDelete.get().getId());
+            logService.log("USER_DELETED", currentUsername, currentUserId, userToDelete.get().getUsername(), userToDelete.get().getId(), description, "SUCCESS", ipAddress);
+
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
     }
-    // --- FIN MÉTODO MOVIDO ---
+
+    @PatchMapping("/{userId}/toggle-status")
+    // CORRECCIÓN: Se usa hasAuthority para validar el rol sin el prefijo 'ROLE_'
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<User> toggleUserStatus(@PathVariable Long userId, Authentication authentication, HttpServletRequest request) {
+        String ipAddress = request.getRemoteAddr();
+        String currentUsername = authentication.getName();
+        Long currentUserId = userRepository.findByEmail(currentUsername).map(User::getId).orElse(null);
+
+        Optional<User> updatedUserOptional = userService.toggleUserStatus(userId);
+
+        if (updatedUserOptional.isPresent()) {
+            User updatedUser = updatedUserOptional.get();
+            String description = String.format("Cambio de estado de la cuenta de '%s' (ID: %d) a %s.",
+                    updatedUser.getUsername(), updatedUser.getId(), updatedUser.isEnabled() ? "Activo" : "Inactivo");
+            logService.log("USER_STATUS_CHANGE", currentUsername, currentUserId,
+                    updatedUser.getUsername(), updatedUser.getId(),
+                    description, "SUCCESS", ipAddress);
+            return ResponseEntity.ok(updatedUser);
+        }
+        return ResponseEntity.notFound().build();
+    }
 }

@@ -1,17 +1,20 @@
-// src/components/dashboard/DashboardHome.jsx
-import React from 'react'; // Asegúrate de importar React
+import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { getFriendlyRoleName } from '../../utils/roleUtils';
+// CORRECCIÓN CLAVE: La función getFriendlyRoleName ya no existe,
+// por lo que se elimina la importación para solucionar el error.
+// import { getFriendlyRoleName } from '../../utils/roleUtils';
 
-const DashboardHome = () => { // Aquí defines tu componente
-    const { user, role } = useAuth();
+const DashboardHome = () => {
+    const { user, userRoles } = useAuth();
+
     return (
         <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md min-h-[calc(100vh-160px)] flex flex-col justify-center items-center">
             <h1 className="text-4xl font-extrabold text-gray-800 dark:text-gray-100 mb-4 text-center">
                 ¡Bienvenido, {user?.firstName || 'Usuario'}!
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-300 mb-2 text-center max-w-2xl">
-                Tu rol actual es: <span className="font-bold text-blue-600 dark:text-blue-400">{getFriendlyRoleName(role)}</span>
+                {/* CORRECCIÓN: Mostramos el rol directamente del array userRoles */}
+                Tu rol actual es: <span className="font-bold text-blue-600 dark:text-blue-400">{userRoles[0]}</span>
             </p>
             <p className="text-lg text-gray-600 dark:text-gray-300 mb-6 text-center max-w-2xl">
                 Este es el panel principal de tu sistema. Utiliza el menú de la izquierda para navegar por las diferentes secciones y gestionar tu trabajo de manera eficiente.
@@ -34,4 +37,4 @@ const DashboardHome = () => { // Aquí defines tu componente
     );
 };
 
-export default DashboardHome; // ¡ESTA LÍNEA ES CLAVE!
+export default DashboardHome;

@@ -1,19 +1,5 @@
-
 import axios from 'axios';
-import { toast } from 'react-toastify'; // Para las notificaciones
-import { AuthContext } from '../context/AuthContext'; // Para acceder al contexto de autenticación
-
-
-
-// ==========================================================
-// NOTA IMPORTANTE: CÓMO MANEJAR EL CONTEXTO EN UN INTERCEPTOR
-// ==========================================================
-// El problema con los interceptores es que son funciones "fuera" del árbol de componentes React.
-// No pueden usar hooks como useContext() directamente.
-// Para acceder al contexto (y sus funciones como logout, navigate), necesitamos una forma de "inyectarlo".
-// La solución más común y limpia es usar una variable global MUTABLE
-// que se actualice con la función `setAuthDataForInterceptors`
-// expuesta por tu AuthProvider.
+import { toast } from 'react-toastify';
 
 let authDataForInterceptors = {
     logout: () => console.warn('Logout function not yet set for interceptors.'),
@@ -25,76 +11,64 @@ export const setAuthDataForInterceptors = (logoutFn, navigateFn) => {
     authDataForInterceptors.navigate = navigateFn;
 };
 
-
-// 1. Crea una instancia de Axios
 const apiClient = axios.create({
-    baseURL: 'http://localhost:8080/api', // URL base de tu backend
+    baseURL: 'http://localhost:8080/api',
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
-// 2. Interceptor de Solicitudes (Request Interceptor)
-//    Este interceptor se ejecutará ANTES de que cada solicitud salga de tu aplicación.
 apiClient.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('jwtToken'); // Obtiene el token del localStorage
-
+        const token = localStorage.getItem('jwtToken');
         if (token) {
-            config.headers.Authorization = `Bearer ${token}`; // Adjunta el token al encabezado
+            config.headers.Authorization = `Bearer ${token}`;
         }
-        return config; // Devuelve la configuración modificada
+        return config;
     },
     (error) => {
-        return Promise.reject(error); // Si hay un error antes de enviar, lo propaga
+        return Promise.reject(error);
     }
 );
 
-// 3. Interceptor de Respuestas (Response Interceptor)
-//    Este interceptor se ejecutará DESPUÉS de que cada respuesta llegue a tu aplicación.
 apiClient.interceptors.response.use(
     (response) => {
-        return response; // Si la respuesta es exitosa, la devuelve directamente
+        return response;
     },
     (error) => {
-        // Si la respuesta es un error
         if (error.response) {
-            const { status } = error.response;
+            const { status, config } = error.response; // Acceder a la configuración de la solicitud
 
-            // Manejo específico para el error 401 (Unauthorized)
-            if (status === 401) {
-                // Podría ser token expirado o inválido
+            // CORRECCIÓN CLAVE: Solo manejar 401 si NO es la URL de login
+            // El backend responde 401 para credenciales inválidas en /auth/login,
+            // pero el interceptor no debe cerrar sesión en ese caso.
+            if (status === 401 && !config.url.includes('/auth/login')) {
                 console.error('Error 401: Token expirado o inválido. Redirigiendo a login.');
                 toast.error('Tu sesión ha expirado o es inválida. Por favor, inicia sesión de nuevo.');
-
-                // Usa la función de logout y navigate que se inyectaron
                 authDataForInterceptors.logout();
                 authDataForInterceptors.navigate('/login');
-
-                // Evita que la promesa del error se propague, ya que ya manejamos la redirección
-                return Promise.reject(error);
+                return Promise.reject(error); // Rechazar la promesa para detener el flujo
             }
 
-            // Manejo de otros errores comunes
+            // Para errores 401 del endpoint de login (credenciales inválidas)
+            // o cualquier otro error 4xx/5xx, simplemente muestra el toast
             if (status === 403) {
                 toast.error('No tienes permiso para realizar esta acción.');
             } else if (status >= 500) {
                 toast.error('Ha ocurrido un error en el servidor. Inténtalo de nuevo más tarde.');
             } else if (status >= 400 && status < 500) {
-                // Para otros errores del cliente (ej. 400 Bad Request, 404 Not Found)
+                // Para 401 del login, y otros errores del cliente (400, 404, etc.)
                 const errorMessage = error.response.data?.message || 'Error en la solicitud.';
                 toast.error(errorMessage);
             }
         } else if (error.request) {
-            // Error de red: La solicitud fue hecha pero no se recibió respuesta
             toast.error('No se pudo conectar con el servidor. Verifica tu conexión a internet.');
         } else {
-            // Algo más causó el error (ej. error en la configuración de Axios)
             toast.error('Ha ocurrido un error inesperado.');
         }
 
-        return Promise.reject(error); // Propaga el error para que el componente que hizo la llamada lo maneje también si es necesario
+        return Promise.reject(error);
     }
 );
 
-export default apiClient; // Exporta la instancia configurada de Axios
+export default apiClient;

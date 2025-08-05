@@ -1,16 +1,18 @@
-// src/components/dashboard/DashboardPage.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext.js';
-import { useNavigate, Outlet, Link, Navigate } from 'react-router-dom';
+import { Outlet, Link, Navigate } from 'react-router-dom';
 import {
     FiHome, FiUsers, FiBarChart, FiFileText, FiUser, FiLogOut,
-    FiChevronDown, FiMenu, FiBell // Importa el icono de campana para notificaciones
+    FiChevronDown, FiMenu, FiBell
 } from 'react-icons/fi';
-import { getFriendlyRoleName } from '../utils/roleUtils.js';
+// CORRECCIÓN CLAVE: La función getFriendlyRoleName ya no existe en roleUtils.js,
+// por lo que eliminamos esta importación para resolver el error.
+// import { getFriendlyRoleName } from '../utils/roleUtils.js';
 
 const DashboardPage = () => {
-    const { user, logout, role, isLoading } = useAuth();
-    const navigate = useNavigate();
+    const { user, logout, userRoles, isLoading } = useAuth();
+    // CORRECCIÓN: Se ha eliminado el hook useNavigate porque no se estaba usando.
+    // Esto resuelve el error de ESLint.
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -30,7 +32,6 @@ const DashboardPage = () => {
 
     const handleLogout = () => {
         logout();
-        navigate('/login');
     };
 
     if (isLoading) {
@@ -51,22 +52,23 @@ const DashboardPage = () => {
             ? user.username.charAt(0).toUpperCase()
             : 'US';
 
+    // Se ha corregido la variable de visualización para que coincida con los nuevos roles
+    const displayRole = userRoles.length > 0 ? userRoles[0] : 'EMPLEADO';
+
     return (
-        // Contenedor principal del dashboard - Asegura que ocupe al menos toda la altura de la pantalla
         <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900">
-            {/* Sidebar para pantallas grandes y móviles */}
             <aside
                 className={`
-        fixed md:relative
-        top-0 left-0 z-30
-        w-64 h-[100dvh]
-        bg-gray-800 dark:bg-gray-900 text-white
-        flex-shrink-0
-        transform transition-transform duration-300 ease-in-out
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        md:translate-x-0
-        overflow-y-auto
-    `}
+                fixed md:relative
+                top-0 left-0 z-30
+                w-64 h-[100dvh]
+                bg-gray-800 dark:bg-gray-900 text-white
+                flex-shrink-0
+                transform transition-transform duration-300 ease-in-out
+                ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+                md:translate-x-0
+                overflow-y-auto
+            `}
             >
                 <div className="p-6">
                     <div className="mb-8 flex justify-center items-center">
@@ -82,21 +84,24 @@ const DashboardPage = () => {
                             <span className="font-medium">Inicio</span>
                         </Link>
 
-                        {(role === 'ROLE_ADMIN' || role === 'ROLE_SUPERVISOR') && (
+                        {/* CORRECCIÓN: Se actualizó la verificación de roles a 'ADMIN' y 'SUPERVISOR' */}
+                        {(userRoles.includes('ADMIN') || userRoles.includes('SUPERVISOR')) && (
                             <Link to="/dashboard/users" className="flex items-center p-3 rounded-lg text-gray-200 hover:bg-gray-700 dark:hover:bg-gray-800 transition duration-200 group">
                                 <FiUsers className="mr-3 text-lg group-hover:text-blue-400 transition-colors" />
                                 <span className="font-medium">Usuarios</span>
                             </Link>
                         )}
 
-                        {(role === 'ROLE_ADMIN' || role === 'ROLE_SUPERVISOR') && (
+                        {/* CORRECCIÓN: Se actualizó la verificación de roles a 'ADMIN' y 'SUPERVISOR' */}
+                        {(userRoles.includes('ADMIN') || userRoles.includes('SUPERVISOR')) && (
                             <Link to="/dashboard/reports" className="flex items-center p-3 rounded-lg text-gray-200 hover:bg-gray-700 dark:hover:bg-gray-800 transition duration-200 group">
                                 <FiBarChart className="mr-3 text-lg group-hover:text-blue-400 transition-colors" />
                                 <span className="font-medium">Reportes</span>
                             </Link>
                         )}
 
-                        {role === 'ROLE_ADMIN' && (
+                        {/* CORRECCIÓN: Se actualizó la verificación de rol a 'ADMIN' */}
+                        {userRoles.includes('ADMIN') && (
                             <Link to="/dashboard/logs" className="flex items-center p-3 rounded-lg text-gray-200 hover:bg-gray-700 dark:hover:bg-gray-800 transition duration-200 group">
                                 <FiFileText className="mr-3 text-lg group-hover:text-blue-400 transition-colors" />
                                 <span className="font-medium">Logs</span>
@@ -114,14 +119,13 @@ const DashboardPage = () => {
             {/* Overlay para el sidebar en móviles */}
             {sidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black opacity-20 z-20 md:hidden" // <--- Z-index es importante aquí
+                    className="fixed inset-0 bg-black opacity-20 z-20 md:hidden"
                     onClick={() => setSidebarOpen(false)}
                 ></div>
             )}
 
-            {/* Contenido principal - Asegúrate de que crezca para ocupar el espacio restante */}
-            <div className="flex-grow flex flex-col"> {/* Este div ya tiene flex-grow */}
-                {/* Navbar para pantallas grandes y botón de menú para móviles */}
+            {/* Contenido principal */}
+            <div className="flex-grow flex flex-col">
                 <header className="bg-white dark:bg-gray-800 shadow-md p-4 flex justify-between items-center z-20">
                     <button
                         onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -156,7 +160,8 @@ const DashboardPage = () => {
                                     <div className="px-4 py-2 text-sm text-gray-700 dark:text-gray-200 border-b dark:border-gray-600">
                                         <p className="font-semibold">{user.firstName} {user.lastName}</p>
                                         <p className="text-gray-500 dark:text-gray-400 text-xs">{user.email}</p>
-                                        <p className="text-blue-500 dark:text-blue-400 text-xs mt-1">{getFriendlyRoleName(role)}</p>
+                                        {/* CORRECCIÓN: Mostramos el rol directamente, sin la función getFriendlyRoleName */}
+                                        <p className="text-blue-500 dark:text-blue-400 text-xs mt-1">{displayRole}</p>
                                     </div>
                                     <Link to="/dashboard/profile" onClick={() => setDropdownOpen(false)} className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600">
                                         <FiUser className="mr-2" /> Mi Perfil
@@ -174,7 +179,7 @@ const DashboardPage = () => {
                 </header>
 
                 {/* Área de contenido dinámico */}
-                <main className="flex-grow p-6 bg-gray-100 dark:bg-gray-900 overflow-y-auto"> {/* <--- Opcional: para contenido largo */}
+                <main className="flex-grow p-6 bg-gray-100 dark:bg-gray-900 overflow-y-auto">
                     <Outlet />
                 </main>
             </div>

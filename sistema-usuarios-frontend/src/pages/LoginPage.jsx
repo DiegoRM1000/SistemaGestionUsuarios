@@ -9,39 +9,28 @@ const LoginPage = () => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false); // Estado para la visibilidad de la contraseña
 
-
     const navigate = useNavigate(); // ¡Inicializa useNavigate!
     const { login } = useAuth(); // ¡Obtiene la función 'login' del contexto!
 
     const handleLogin = async (e) => {
         e.preventDefault();
 
+        // ¡AHORA LLAMAMOS A LA FUNCIÓN LOGIN DEL CONTEXTO!
+        const result = await login(email, password);
 
-        try {
-            // ¡AHORA LLAMAMOS A LA FUNCIÓN LOGIN DEL CONTEXTO!
-            const result = await login(email, password);
+        if (result.success) {
+            console.log('Login exitoso desde LoginPage!');
+            // CORRECCIÓN CLAVE: Eliminamos el toast.success aquí.
+            // AuthProvider ya lo maneja para evitar notificaciones duplicadas.
+            // ¡AHORA TODOS SE REDIRIGEN AL MISMO PUNTO DE ENTRADA DEL DASHBOARD LAYOUT!
+            navigate('/dashboard');
 
-            if (result.success) {
-                console.log('Login exitoso desde LoginPage!');
-                console.log('Rol del usuario:', result.role);
-
-                toast.success('¡Inicio de sesión exitoso!'); // ¡Muestra el toast de éxito!
-
-                // ¡AHORA TODOS SE REDIRIGEN AL MISMO PUNTO DE ENTRADA DEL DASHBOARD LAYOUT!
-                navigate('/dashboard');
-
-            } else {
-                // El error ya se maneja y notifica desde AuthProvider con toast.error
-                console.log('Login fallido (notificado desde AuthProvider):', result.message);
-                // ¡ELIMINA TODA LA LÓGICA DE setNotification AQUÍ!
-            }
-
-        } catch (error) {
-            // Este catch es para errores inesperados de red o ejecución local
-            console.error('Error inesperado durante el login en LoginPage:', error);
-            toast.error('Ocurrió un error inesperado. Por favor, inténtalo de nuevo.'); // Notificación para errores no manejados
+        } else {
+            // El error ya se maneja y notifica desde AuthProvider con toast.error
+            console.log('Login fallido (notificado desde AuthProvider):', result.message);
         }
     };
+
     return (
         <div
             className="

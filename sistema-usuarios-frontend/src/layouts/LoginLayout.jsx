@@ -1,4 +1,3 @@
-// src/layouts/LoginLayout.jsx
 import React from 'react';
 import LoginPage from '../pages/LoginPage'; // Ajusta la ruta si es necesario
 
