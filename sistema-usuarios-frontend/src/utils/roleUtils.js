@@ -11,7 +11,7 @@ export const getRoleColor = (roleName) => {
             return '#dc2626'; // Rojo
         case 'SUPERVISOR':
             return '#1d4ed8'; // Azul
-        case 'EMPLOYEE':
+        case 'EMPLEADO':
             return '#4f46e5'; // Índigo
         default:
             return '#6b7280'; // Gris

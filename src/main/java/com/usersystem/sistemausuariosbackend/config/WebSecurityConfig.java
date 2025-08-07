@@ -79,6 +79,7 @@ public class WebSecurityConfig {
                         .requestMatchers("/api/users/me").authenticated()
                         // CORRECCIÓN: Se usa hasAnyAuthority para evitar el prefijo ROLE_
                         // Ahora esta regla de seguridad coincidirá con las de los controladores
+                        .requestMatchers("/api/roles/**").hasAnyAuthority("ADMIN")
                         .requestMatchers("/api/users/**").hasAnyAuthority("ADMIN", "SUPERVISOR")
                         .requestMatchers("/api/logs/**").hasAnyAuthority("ADMIN", "SUPERVISOR")
                         .anyRequest().authenticated()

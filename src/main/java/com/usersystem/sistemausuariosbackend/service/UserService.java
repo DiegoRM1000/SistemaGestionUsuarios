@@ -6,15 +6,24 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import com.usersystem.sistemausuariosbackend.repository.RoleRepository;
+import java.util.Map;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 
 @Service
 public class UserService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository; // Agrega esto
+    // ... (constructor)
 
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, RoleRepository roleRepository) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
     }
+
 
     /**
      * Obtiene una lista de todos los usuarios del sistema.
@@ -61,4 +70,37 @@ public class UserService {
             return userRepository.save(user);
         });
     }
+
+    /**
+     * Actualiza los datos de un usuario existente.
+     *
+     * @param userId El ID del usuario a actualizar.
+     * @param updateRequest Un mapa con los nuevos datos del usuario.
+     * @return Un Optional que contiene el usuario actualizado, o un Optional vacío si no se encuentra.
+     */
+    public Optional<User> updateUser(Long userId, Map<String, String> updateRequest) {
+        return userRepository.findById(userId).map(user -> {
+            user.setFirstName(updateRequest.getOrDefault("firstName", user.getFirstName()));
+            user.setLastName(updateRequest.getOrDefault("lastName", user.getLastName()));
+            user.setUsername(updateRequest.getOrDefault("username", user.getUsername()));
+            user.setEmail(updateRequest.getOrDefault("email", user.getEmail()));
+            user.setDni(updateRequest.getOrDefault("dni", user.getDni()));
+            String dateOfBirthStr = updateRequest.get("dateOfBirth");
+            if (dateOfBirthStr != null && !dateOfBirthStr.isEmpty()) {
+                user.setDateOfBirth(LocalDate.parse(dateOfBirthStr));
+            }
+            user.setPhoneNumber(updateRequest.getOrDefault("phoneNumber", user.getPhoneNumber()));
+
+            String roleName = updateRequest.get("role");
+            if (roleName != null) {
+                roleRepository.findByName(roleName).ifPresent(user::setRole);
+            }
+
+            user.setUpdatedAt(LocalDateTime.now());
+            return userRepository.save(user);
+        });
+    }
+
+
+
 }

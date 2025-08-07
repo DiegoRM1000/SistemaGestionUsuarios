@@ -39,25 +39,21 @@ apiClient.interceptors.response.use(
         if (error.response) {
             const { status, config } = error.response; // Acceder a la configuración de la solicitud
 
-            // CORRECCIÓN CLAVE: Solo manejar 401 si NO es la URL de login
-            // El backend responde 401 para credenciales inválidas en /auth/login,
-            // pero el interceptor no debe cerrar sesión en ese caso.
+            // Solo redirigir si el token es inválido/expirado y no estamos en el login
             if (status === 401 && !config.url.includes('/auth/login')) {
                 console.error('Error 401: Token expirado o inválido. Redirigiendo a login.');
                 toast.error('Tu sesión ha expirado o es inválida. Por favor, inicia sesión de nuevo.');
                 authDataForInterceptors.logout();
                 authDataForInterceptors.navigate('/login');
-                return Promise.reject(error); // Rechazar la promesa para detener el flujo
+                return Promise.reject(error);
             }
 
-            // Para errores 401 del endpoint de login (credenciales inválidas)
-            // o cualquier otro error 4xx/5xx, simplemente muestra el toast
+            // NO redirigir con error 403, solo mostrar el mensaje de alerta.
             if (status === 403) {
                 toast.error('No tienes permiso para realizar esta acción.');
             } else if (status >= 500) {
                 toast.error('Ha ocurrido un error en el servidor. Inténtalo de nuevo más tarde.');
             } else if (status >= 400 && status < 500) {
-                // Para 401 del login, y otros errores del cliente (400, 404, etc.)
                 const errorMessage = error.response.data?.message || 'Error en la solicitud.';
                 toast.error(errorMessage);
             }

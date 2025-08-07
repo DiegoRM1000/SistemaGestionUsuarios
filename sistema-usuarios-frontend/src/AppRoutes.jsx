@@ -7,12 +7,12 @@ import PrivateRoute from './components/auth/PrivateRoute';
 import LoginLayout from "./layouts/LoginLayout.jsx";
 import DashboardHome from './components/dashboard/DashboardHome';
 
-
 import UserManagementPage from './components/users/UserManagementPage';
 import ReportsPage from './components/reports/ReportsPage';
 import LogsPage from './components/logs/LogsPage';
 import ProfilePage from './components/profile/ProfilePage';
-
+import CreateUserPage from "./components/users/CreateUserPage.jsx";
+import EditUserPage from "./components/users/EditUserPage.jsx";
 
 const AppRoutes = () => {
     return (
@@ -25,7 +25,6 @@ const AppRoutes = () => {
                     <Route
                         path="/dashboard"
                         element={
-                            // CORRECCIÓN CLAVE: Se actualizaron los nombres de los roles requeridos
                             <PrivateRoute requiredRoles={['ADMIN', 'EMPLEADO', 'SUPERVISOR']}>
                                 <DashboardPage />
                             </PrivateRoute>
@@ -37,8 +36,14 @@ const AppRoutes = () => {
                         <Route path="reports" element={<ReportsPage />} />
                         <Route path="logs" element={<LogsPage />} />
                         <Route path="profile" element={<ProfilePage />} />
-                    </Route>
 
+                        {/* ------------------------------------------------------------- */}
+                        {/* Rutas para Crear y Editar Usuario (Nuevas) */}
+                        {/* ------------------------------------------------------------- */}
+                        <Route path="users/new" element={<CreateUserPage />} />
+                        <Route path="users/edit/:id" element={<EditUserPage />} />
+
+                    </Route>
 
                     {/* Redirección por defecto y 404 */}
                     <Route path="/" element={<Navigate to="/login" replace />} />

@@ -8,6 +8,6 @@ import java.util.Optional;
 
 @Repository // Le dice a Spring que esta interfaz es un componente de repositorio
 public interface RoleRepository extends JpaRepository<Role, Long> {
-    // Buscar un rol por su nombre (ej. "ROLE_ADMIN")
+    // Buscar un rol por su nombre
     Optional<Role> findByName(String name);
 }
