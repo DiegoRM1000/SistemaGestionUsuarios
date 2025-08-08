@@ -56,12 +56,12 @@ const DashboardPage = () => {
     const displayRole = userRoles.length > 0 ? userRoles[0] : 'EMPLEADO';
 
     return (
-        <div className="flex min-h-screen bg-gray-100 dark:bg-gray-900">
+        <div className="flex flex-col md:flex-row h-screen md:h-[100dvh] bg-gray-100 dark:bg-gray-900">
             <aside
                 className={`
                 fixed md:relative
                 top-0 left-0 z-30
-                w-64 h-[100dvh]
+                w-64 h-screen md:h-[100dvh]
                 bg-gray-800 dark:bg-gray-900 text-white
                 flex-shrink-0
                 transform transition-transform duration-300 ease-in-out
@@ -125,8 +125,8 @@ const DashboardPage = () => {
             )}
 
             {/* Contenido principal */}
-            <div className="flex-grow flex flex-col">
-                <header className="bg-white dark:bg-gray-800 shadow-md p-4 flex justify-between items-center z-20">
+            <div className="flex-1 flex flex-col min-h-0">
+                <header className="flex-shrink-0 bg-white dark:bg-gray-800 shadow-md p-4 flex justify-between items-center z-20">
                     <button
                         onClick={() => setSidebarOpen(!sidebarOpen)}
                         className="p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 md:hidden"
@@ -179,7 +179,7 @@ const DashboardPage = () => {
                 </header>
 
                 {/* Área de contenido dinámico */}
-                <main className="flex-grow p-6 bg-gray-100 dark:bg-gray-900 overflow-y-auto">
+                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
                     <Outlet />
                 </main>
             </div>

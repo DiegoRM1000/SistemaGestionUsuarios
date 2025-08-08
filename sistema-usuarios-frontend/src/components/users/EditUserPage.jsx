@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FiSave, FiArrowLeft } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import apiClient from '../../utils/axiosConfig';
+import { useAuth } from '../../context/AuthContext'; // <-- Agrega esta importación
 
 const EditUserPage = () => {
     const { id } = useParams();
@@ -19,6 +20,7 @@ const EditUserPage = () => {
     });
     const [roles, setRoles] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { user, logout } = useAuth(); // <-- Obtén el objeto 'user' y la función 'logout'
 
     useEffect(() => {
         const fetchUserData = async () => {
@@ -64,7 +66,18 @@ const EditUserPage = () => {
         try {
             await apiClient.put(`/users/${id}`, formData);
             toast.success('¡Usuario actualizado con éxito!');
-            navigate('/dashboard/users');
+
+            // Comprueba si el ID del usuario editado es el mismo que el del usuario logueado
+            if (user && user.id === Number(id)) {
+                // Si es el mismo, cierra la sesión para que tenga que volver a iniciarla
+                logout();
+                navigate('/login');
+                toast.info('Tus datos han sido actualizados. Por favor, inicia sesión de nuevo.');
+            } else {
+                // Si es otro usuario, solo redirige a la página de gestión de usuarios
+                navigate('/dashboard/users');
+            }
+
         } catch (error) {
             console.error('Error al actualizar usuario:', error);
             const errorMessage = error.response?.data?.message || 'Error al actualizar usuario. Verifica los datos.';
@@ -81,7 +94,7 @@ const EditUserPage = () => {
     }
 
     return (
-        <div className="p-4 sm:p-8 bg-gray-100 dark:bg-gray-900 min-h-screen font-sans antialiased">
+        <div className="p-4 sm:p-8 bg-gray-100 dark:bg-gray-900 font-sans antialiased">
             <header className="mb-6 flex justify-between items-center">
                 <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Editar Usuario</h1>
                 <button

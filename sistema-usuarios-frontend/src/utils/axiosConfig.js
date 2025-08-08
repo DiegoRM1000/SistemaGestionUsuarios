@@ -31,24 +31,31 @@ apiClient.interceptors.request.use(
     }
 );
 
+let isRedirecting = false;
+
 apiClient.interceptors.response.use(
     (response) => {
         return response;
     },
     (error) => {
         if (error.response) {
-            const { status, config } = error.response; // Acceder a la configuración de la solicitud
+            const { status, config } = error.response;
 
-            // Solo redirigir si el token es inválido/expirado y no estamos en el login
-            if (status === 401 && !config.url.includes('/auth/login')) {
+            if (status === 401 && !config.url.includes('/auth/login') && !isRedirecting) {
+                isRedirecting = true; // Establece la bandera
                 console.error('Error 401: Token expirado o inválido. Redirigiendo a login.');
                 toast.error('Tu sesión ha expirado o es inválida. Por favor, inicia sesión de nuevo.');
                 authDataForInterceptors.logout();
                 authDataForInterceptors.navigate('/login');
+
+                // Reinicia la bandera después de un tiempo prudente
+                setTimeout(() => {
+                    isRedirecting = false;
+                }, 2000);
+
                 return Promise.reject(error);
             }
 
-            // NO redirigir con error 403, solo mostrar el mensaje de alerta.
             if (status === 403) {
                 toast.error('No tienes permiso para realizar esta acción.');
             } else if (status >= 500) {

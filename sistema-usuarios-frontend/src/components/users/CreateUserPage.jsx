@@ -58,7 +58,7 @@ const CreateUserPage = () => {
     };
 
     return (
-        <div className="p-4 sm:p-8 bg-gray-100 dark:bg-gray-900 min-h-screen font-sans antialiased">
+        <div className="p-4 sm:p-8 bg-gray-100 dark:bg-gray-900 font-sans antialiased">
             <header className="mb-6 flex justify-between items-center">
                 <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Crear Nuevo Usuario</h1>
                 <button

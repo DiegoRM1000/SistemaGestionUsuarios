@@ -8,7 +8,7 @@
 export const getRoleColor = (roleName) => {
     switch (roleName) {
         case 'ADMIN':
-            return '#dc2626'; // Rojo
+            return '#dc0678'; // Rojo
         case 'SUPERVISOR':
             return '#1d4ed8'; // Azul
         case 'EMPLEADO':

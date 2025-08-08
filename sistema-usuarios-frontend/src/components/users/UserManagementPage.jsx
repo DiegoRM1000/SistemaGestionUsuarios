@@ -4,21 +4,24 @@ import React, { useState, useEffect } from 'react';
 import {
     FiEdit,
     FiTrash2,
-    FiToggleLeft,
-    FiToggleRight,
     FiDownload,
     FiSearch,
     FiUserPlus,
     FiUsers,
-    FiUser
+    FiUser,
 } from 'react-icons/fi';
+import {
+    BiSolidToggleRight,
+    BiSolidToggleLeft,
+} from 'react-icons/bi';
 import DataTable from 'react-data-table-component';
 import { getRoleColor } from '../../utils/roleUtils';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../utils/axiosConfig';
-import { useNavigate } from 'react-router-dom'; // Importa useNavigate
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 // Componente para el loader
 const Loader = () => (
@@ -33,13 +36,15 @@ const Loader = () => (
 
 // Componente para las tarjetas de indicadores
 const StatCard = ({ title, value, icon, color }) => (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-md flex items-center space-x-4 transition-transform transform hover:scale-105">
-        <div className={`p-3 rounded-full ${color}`}>
-            {icon}
-        </div>
-        <div>
-            <p className="text-gray-500 dark:text-gray-400 text-sm">{title}</p>
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{value}</h3>
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg hover:shadow-xl transform transition-all hover:scale-[1.03] group">
+        <div className="flex items-center space-x-4">
+            <div className={`p-4 rounded-full ${color} bg-opacity-20 group-hover:scale-110 transition`}>
+                <div className="text-3xl">{icon}</div>
+            </div>
+            <div className="flex flex-col">
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</p>
+                <h3 className="text-3xl font-bold text-gray-900 dark:text-white">{value}</h3>
+            </div>
         </div>
     </div>
 );
@@ -91,7 +96,7 @@ const UserManagementPage = () => {
     const [adminCount, setAdminCount] = useState(0);
     const [supervisorCount, setSupervisorCount] = useState(0);
     const [empleadoCount, setEmpleadoCount] = useState(0);
-    const navigate = useNavigate(); // Usa el hook de navegación
+    const navigate = useNavigate();
 
     const fetchUsers = async () => {
         setLoading(true);
@@ -186,7 +191,6 @@ const UserManagementPage = () => {
             const response = await apiClient.get(`/exports/users/${format}`, {
                 responseType: 'blob',
             });
-            // Crear un Blob con el tipo de contenido correcto
             const blob = new Blob([response.data], {
                 type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             });
@@ -195,7 +199,6 @@ const UserManagementPage = () => {
             const link = document.createElement('a');
             link.href = url;
 
-            // Establecer el nombre del archivo con la extensión correcta
             if (format === 'excel') {
                 link.setAttribute('download', `usuarios_reporte.xlsx`);
             } else if (format === 'pdf') {
@@ -206,19 +209,30 @@ const UserManagementPage = () => {
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-            MySwal.fire('¡Éxito!', `El reporte en formato ${format.toUpperCase()} se ha descargado.`, 'success');
+            toast.success(`El reporte en formato ${format.toUpperCase()} se ha descargado.`);
         } catch (error) {
             console.error(`Error al exportar a ${format}:`, error);
-            MySwal.fire('Error', `Hubo un problema al generar el reporte en ${format.toUpperCase()}.`, 'error');
+            toast.error(`Hubo un problema al generar el reporte en ${format.toUpperCase()}.`);
         }
     };
 
+    // Definición de las columnas para la tabla
     const columns = [
-        { name: 'ID', selector: row => row.id, sortable: true, width: '80px' },
+        { name: 'ID', selector: row => row.id, sortable: true, width: '80px', hide: 'md' },
         { name: 'Nombre', selector: row => row.firstName, sortable: true, wrap: true },
         { name: 'Apellido', selector: row => row.lastName, sortable: true, wrap: true },
         { name: 'Email', selector: row => row.email, sortable: true, wrap: true, minWidth: '220px' },
-        { name: 'DNI', selector: row => row.dni, sortable: true, wrap: true, grow: 0.5 },
+        {
+            name: 'DNI',
+            selector: row => row.dni,
+            sortable: true,
+            wrap: true,
+            grow: 0.5,
+            hide: 'sm', // Oculta en pantallas pequeñas
+            style: {
+                justifyContent: 'center', // Alinea al medio
+            },
+        },
         {
             name: 'Rol',
             selector: row => row.role?.name,
@@ -267,11 +281,15 @@ const UserManagementPage = () => {
                                 <FiTrash2 className="h-5 w-5" />
                             </button>
                             <button
-                                className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-600 transition duration-150 ease-in-out transform hover:scale-110"
+                                className="transition duration-150 ease-in-out transform hover:scale-110"
                                 onClick={() => handleToggleStatus(row.id)}
                                 aria-label={`Alternar estado de usuario ${row.firstName}`}
                             >
-                                {row.enabled ? <FiToggleLeft className="h-5 w-5" /> : <FiToggleRight className="h-5 w-5" />}
+                                {row.enabled ? (
+                                    <BiSolidToggleRight className="h-5 w-5 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-600" />
+                                ) : (
+                                    <BiSolidToggleLeft className="h-5 w-5 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-600" />
+                                )}
                             </button>
                         </>
                     )}
@@ -289,7 +307,7 @@ const UserManagementPage = () => {
     }
 
     return (
-        <div className="p-4 sm:p-8 bg-gray-100 dark:bg-gray-900 min-h-screen font-sans antialiased">
+        <div className="p-4 sm:p-8 bg-gray-100 dark:bg-gray-900 font-sans antialiased">
             <header className="mb-8">
                 <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-2">
                     Gestión de Usuarios
@@ -299,7 +317,7 @@ const UserManagementPage = () => {
                 </p>
             </header>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <StatCard
                     title="Total de Usuarios"
                     value={totalUsers}
@@ -310,7 +328,7 @@ const UserManagementPage = () => {
                     title="Administradores"
                     value={adminCount}
                     icon={<FiUser className="h-6 w-6 text-red-700 dark:text-red-200" />}
-                    color="bg-red-200 dark:bg-red-700"
+                    color="bg-pink-200 dark:bg-pink-700"
                 />
                 <StatCard
                     title="Supervisores"
@@ -340,30 +358,33 @@ const UserManagementPage = () => {
                             className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white shadow-sm transition-colors"
                         />
                     </div>
-                    <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4 w-full md:w-auto">
+                    {/* Contenedor de botones responsive */}
+                    <div className="flex flex-wrap justify-end gap-2 md:space-x-4 w-full md:w-auto">
                         {isAdmin && (
                             <button
-                                // CORRECCIÓN: El onClick debe redirigir a la ruta correcta
                                 onClick={() => navigate('/dashboard/users/new')}
-                                className="flex items-center justify-center w-full md:w-auto px-6 py-2.5 rounded-lg shadow-md text-white font-medium bg-green-600 hover:bg-green-700 transition duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2.5 rounded-lg shadow-md text-white font-medium bg-gray-500 hover:bg-gray-600 transition duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                             >
                                 <FiUserPlus className="mr-2 h-5 w-5" />
-                                Nuevo Usuario
+                                <span className="hidden sm:inline">Nuevo Usuario</span>
+                                <span className="inline sm:hidden">Nuevo</span>
                             </button>
                         )}
                         <button
                             onClick={() => handleExport('pdf')}
-                            className="flex items-center justify-center w-full md:w-auto px-6 py-2.5 rounded-lg shadow-md text-white font-medium bg-gray-600 hover:bg-gray-700 transition duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                            className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2.5 rounded-lg shadow-md text-white font-medium bg-red-600 hover:bg-red-700 transition duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                         >
                             <FiDownload className="mr-2 h-5 w-5" />
-                            PDF
+                            <span className="hidden sm:inline">PDF</span>
+                            <span className="inline sm:hidden">PDF</span>
                         </button>
                         <button
                             onClick={() => handleExport('excel')}
-                            className="flex items-center justify-center w-full md:w-auto px-6 py-2.5 rounded-lg shadow-md text-white font-medium bg-gray-600 hover:bg-gray-700 transition duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                            className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2.5 rounded-lg shadow-md text-white font-medium bg-green-600 hover:bg-green-700 transition duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                         >
                             <FiDownload className="mr-2 h-5 w-5" />
-                            Excel
+                            <span className="hidden sm:inline">Excel</span>
+                            <span className="inline sm:hidden">Excel</span>
                         </button>
                     </div>
                 </div>
@@ -378,7 +399,6 @@ const UserManagementPage = () => {
                     customStyles={tableStyles}
                 />
             </div>
-
         </div>
     );
 };
