@@ -12,6 +12,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.PdfPCell;
@@ -30,7 +32,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/reports")
-@PreAuthorize("hasAuthority('ADMIN')") // Solo los administradores pueden ver los reportes
+@PreAuthorize("hasAnyAuthority('ADMIN','SUPERVISOR')") // Solo los administradores pueden ver los reportes
 public class ReportController {
 
     private final UserRepository userRepository;
@@ -74,40 +76,45 @@ public class ReportController {
     }
 
     @GetMapping("/export/pdf")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPERVISOR')")
     public ResponseEntity<byte[]> exportUsersToPdf() throws DocumentException, IOException {
-        List<User> users = userRepository.findAll();
+        List<User> users;
+        // ⬅️ CAMBIO: Obtenemos el usuario autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        // ⬅️ CAMBIO: Filtramos la lista de usuarios según el rol
+        if (authentication != null && authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("SUPERVISOR"))) {
+            users = userRepository.findByRoleName("EMPLEADO");
+        } else {
+            users = userRepository.findAll();
+        }
 
         Document document = new Document(PageSize.A4.rotate());
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         PdfWriter.getInstance(document, baos);
 
         document.open();
-
-        // Título del documento
-        // CORRECCIÓN: Se usa la ruta completa para Font de iText
+        // ... resto del código sin cambios ...
         com.itextpdf.text.Font titleFont = new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 18, com.itextpdf.text.Font.BOLD, BaseColor.DARK_GRAY);
         Paragraph title = new Paragraph("Reporte de Usuarios del Sistema", titleFont);
         title.setAlignment(Element.ALIGN_CENTER);
         title.setSpacingAfter(20);
         document.add(title);
 
-        // Tabla de usuarios
-        PdfPTable table = new PdfPTable(7); // 7 columnas
+        PdfPTable table = new PdfPTable(7);
         table.setWidthPercentage(100);
         table.setSpacingBefore(10f);
         table.setSpacingAfter(10f);
 
-        // Encabezados de la tabla con estilo
         String[] headers = {"ID", "Nombre Completo", "Username", "Email", "DNI", "Rol", "Estado"};
         for (String header : headers) {
             PdfPCell cell = new PdfPCell(new Phrase(header, new com.itextpdf.text.Font(com.itextpdf.text.Font.FontFamily.HELVETICA, 10, com.itextpdf.text.Font.BOLD, BaseColor.WHITE)));
-            cell.setBackgroundColor(new BaseColor(63, 81, 181)); // Azul oscuro
+            cell.setBackgroundColor(new BaseColor(63, 81, 181));
             cell.setHorizontalAlignment(Element.ALIGN_CENTER);
             cell.setPadding(8);
             table.addCell(cell);
         }
 
-        // Filas de datos
         for (User user : users) {
             table.addCell(createCell(String.valueOf(user.getId()), Element.ALIGN_CENTER));
             table.addCell(createCell(user.getFirstName() + " " + user.getLastName(), Element.ALIGN_LEFT));
@@ -139,22 +146,29 @@ public class ReportController {
      * Exporta la lista de todos los usuarios a un archivo Excel con un diseño profesional.
      */
     @GetMapping("/export/excel")
+    @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPERVISOR')")
     public ResponseEntity<byte[]> exportUsersToExcel() throws IOException {
-        List<User> users = userRepository.findAll();
+        List<User> users;
+        // ⬅️ CAMBIO: Obtenemos el usuario autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        // ⬅️ CAMBIO: Filtramos la lista de usuarios según el rol
+        if (authentication != null && authentication.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("SUPERVISOR"))) {
+            users = userRepository.findByRoleName("EMPLEADO");
+        } else {
+            users = userRepository.findAll();
+        }
 
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Usuarios");
 
-        // Estilo de encabezado
         CellStyle headerStyle = workbook.createCellStyle();
-        // CORRECCIÓN: Se usa la ruta completa para Font de Apache POI
         org.apache.poi.ss.usermodel.Font headerFont = workbook.createFont();
         headerFont.setBold(true);
         headerStyle.setFont(headerFont);
         headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
         headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-        // Crear fila de encabezados
         Row headerRow = sheet.createRow(0);
         String[] headers = {"ID", "Nombre", "Apellido", "Username", "Email", "DNI", "Teléfono", "Fecha de Nacimiento", "Rol", "Estado"};
         for (int i = 0; i < headers.length; i++) {
@@ -163,7 +177,6 @@ public class ReportController {
             cell.setCellStyle(headerStyle);
         }
 
-        // Rellenar filas de datos
         int rowNum = 1;
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
 
@@ -185,7 +198,6 @@ public class ReportController {
             row.createCell(9).setCellValue(user.isEnabled() ? "Activo" : "Inactivo");
         }
 
-        // Ajustar el tamaño de las columnas
         for (int i = 0; i < headers.length; i++) {
             sheet.autoSizeColumn(i);
         }

@@ -82,6 +82,7 @@ public class WebSecurityConfig {
                         .requestMatchers("/api/roles/**").hasAnyAuthority("ADMIN")
                         .requestMatchers("/api/users/**").hasAnyAuthority("ADMIN", "SUPERVISOR")
                         .requestMatchers("/api/logs/**").hasAnyAuthority("ADMIN", "SUPERVISOR")
+                        .requestMatchers("/api/reports/**").hasAnyAuthority("ADMIN", "SUPERVISOR")
                         .anyRequest().authenticated()
                 );
 

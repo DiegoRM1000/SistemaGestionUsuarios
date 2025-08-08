@@ -44,10 +44,20 @@ public class UserController {
 
     @GetMapping("/all")
     @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPERVISOR')")
-    public ResponseEntity<List<User>> getAllUsers() {
-        List<User> users = userService.getAllUsers();
-        return ResponseEntity.ok(users);
+    public ResponseEntity<List<User>> getAllUsers(Authentication authentication) {
+        // CAMBIO: Lógica para que el SUPERVISOR solo vea EMPLEADOS
+        boolean isSupervisor = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("SUPERVISOR"));
+
+        if (isSupervisor) {
+            List<User> employees = userRepository.findByRoleName("EMPLEADO");
+            return ResponseEntity.ok(employees);
+        } else {
+            List<User> users = userService.getAllUsers();
+            return ResponseEntity.ok(users);
+        }
     }
+
 
     @GetMapping("/me")
     public ResponseEntity<UserResponseDto> getMyProfile(Authentication authentication) {

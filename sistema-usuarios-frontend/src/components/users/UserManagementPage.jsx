@@ -17,13 +17,13 @@ import {
 import DataTable from 'react-data-table-component';
 import { getRoleColor } from '../../utils/roleUtils';
 import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
+import withReactContent from 'sweetalert2-react-Content';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../utils/axiosConfig';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-// Componente para el loader
+// Componente para el loader... (sin cambios)
 const Loader = () => (
     <div className="flex flex-col items-center justify-center p-8 text-gray-500 dark:text-gray-400">
         <svg className="animate-spin -ml-1 mr-3 h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -34,7 +34,7 @@ const Loader = () => (
     </div>
 );
 
-// Componente para las tarjetas de indicadores
+// Componente para las tarjetas de indicadores... (sin cambios)
 const StatCard = ({ title, value, icon, color }) => (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg hover:shadow-xl transform transition-all hover:scale-[1.03] group">
         <div className="flex items-center space-x-4">
@@ -91,6 +91,7 @@ const UserManagementPage = () => {
     const MySwal = withReactContent(Swal);
     const { userRoles } = useAuth();
     const isAdmin = userRoles.includes('ADMIN');
+    const isSupervisor = userRoles.includes('SUPERVISOR');
 
     const [totalUsers, setTotalUsers] = useState(0);
     const [adminCount, setAdminCount] = useState(0);
@@ -110,6 +111,9 @@ const UserManagementPage = () => {
             setEmpleadoCount(data.filter(u => u.role?.name === 'EMPLEADO').length);
         } catch (error) {
             console.error("Error al cargar los usuarios:", error);
+            if (isSupervisor) {
+                toast.error("No tienes permisos para ver todos los datos de usuario.");
+            }
         } finally {
             setLoading(false);
         }
@@ -186,13 +190,14 @@ const UserManagementPage = () => {
         });
     };
 
+    // CAMBIO: Se revirtieron las rutas para que la exportación de usuarios sea exclusiva de esta página.
     const handleExport = async (format) => {
         try {
             const response = await apiClient.get(`/exports/users/${format}`, {
                 responseType: 'blob',
             });
             const blob = new Blob([response.data], {
-                type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                type: format === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             });
 
             const url = window.URL.createObjectURL(blob);
@@ -212,11 +217,13 @@ const UserManagementPage = () => {
             toast.success(`El reporte en formato ${format.toUpperCase()} se ha descargado.`);
         } catch (error) {
             console.error(`Error al exportar a ${format}:`, error);
-            toast.error(`Hubo un problema al generar el reporte en ${format.toUpperCase()}.`);
+            const errorMessage = error.response?.data?.message || 'Error al exportar. Asegúrate de ser administrador.';
+            toast.error(errorMessage);
         }
     };
 
-    // Definición de las columnas para la tabla
+
+    // Definición de las columnas para la tabla... (sin cambios)
     const columns = [
         { name: 'ID', selector: row => row.id, sortable: true, width: '80px', hide: 'md' },
         { name: 'Nombre', selector: row => row.firstName, sortable: true, wrap: true },
@@ -228,9 +235,9 @@ const UserManagementPage = () => {
             sortable: true,
             wrap: true,
             grow: 0.5,
-            hide: 'sm', // Oculta en pantallas pequeñas
+            hide: 'sm',
             style: {
-                justifyContent: 'center', // Alinea al medio
+                justifyContent: 'center',
             },
         },
         {
@@ -247,7 +254,7 @@ const UserManagementPage = () => {
                 </span>
             ),
         },
-        {
+        ...(isAdmin ? [{
             name: 'Estado',
             selector: row => row.enabled,
             sortable: true,
@@ -259,18 +266,20 @@ const UserManagementPage = () => {
                     {row.enabled ? 'Activo' : 'Inactivo'}
                 </span>
             ),
-        },
+        }] : []),
         {
             name: 'Acciones',
             cell: row => (
                 <div className="flex space-x-2">
-                    <button
-                        className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-600 transition duration-150 ease-in-out transform hover:scale-110"
-                        onClick={() => handleEdit(row.id)}
-                        aria-label={`Editar usuario ${row.firstName}`}
-                    >
-                        <FiEdit className="h-5 w-5" />
-                    </button>
+                    {isAdmin && (
+                        <button
+                            className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-600 transition duration-150 ease-in-out transform hover:scale-110"
+                            onClick={() => handleEdit(row.id)}
+                            aria-label={`Editar usuario ${row.firstName}`}
+                        >
+                            <FiEdit className="h-5 w-5" />
+                        </button>
+                    )}
                     {isAdmin && (
                         <>
                             <button
@@ -317,32 +326,34 @@ const UserManagementPage = () => {
                 </p>
             </header>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <StatCard
-                    title="Total de Usuarios"
-                    value={totalUsers}
-                    icon={<FiUsers className="h-6 w-6 text-gray-700 dark:text-gray-200" />}
-                    color="bg-gray-200 dark:bg-gray-700"
-                />
-                <StatCard
-                    title="Administradores"
-                    value={adminCount}
-                    icon={<FiUser className="h-6 w-6 text-red-700 dark:text-red-200" />}
-                    color="bg-pink-200 dark:bg-pink-700"
-                />
-                <StatCard
-                    title="Supervisores"
-                    value={supervisorCount}
-                    icon={<FiUser className="h-6 w-6 text-blue-700 dark:text-blue-200" />}
-                    color="bg-blue-200 dark:bg-blue-700"
-                />
-                <StatCard
-                    title="Empleados"
-                    value={empleadoCount}
-                    icon={<FiUser className="h-6 w-6 text-indigo-700 dark:text-indigo-200" />}
-                    color="bg-indigo-200 dark:bg-indigo-700"
-                />
-            </div>
+            {isAdmin && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <StatCard
+                        title="Total de Usuarios"
+                        value={totalUsers}
+                        icon={<FiUsers className="h-6 w-6 text-gray-700 dark:text-gray-200" />}
+                        color="bg-gray-200 dark:bg-gray-700"
+                    />
+                    <StatCard
+                        title="Administradores"
+                        value={adminCount}
+                        icon={<FiUser className="h-6 w-6 text-red-700 dark:text-red-200" />}
+                        color="bg-pink-200 dark:bg-pink-700"
+                    />
+                    <StatCard
+                        title="Supervisores"
+                        value={supervisorCount}
+                        icon={<FiUser className="h-6 w-6 text-blue-700 dark:text-blue-200" />}
+                        color="bg-blue-200 dark:bg-blue-700"
+                    />
+                    <StatCard
+                        title="Empleados"
+                        value={empleadoCount}
+                        icon={<FiUser className="h-6 w-6 text-indigo-700 dark:text-indigo-200" />}
+                        color="bg-indigo-200 dark:bg-indigo-700"
+                    />
+                </div>
+            )}
 
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
                 <div className="flex flex-col md:flex-row justify-between items-center mb-6 space-y-4 md:space-y-0">
@@ -358,7 +369,6 @@ const UserManagementPage = () => {
                             className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-800 dark:text-white shadow-sm transition-colors"
                         />
                     </div>
-                    {/* Contenedor de botones responsive */}
                     <div className="flex flex-wrap justify-end gap-2 md:space-x-4 w-full md:w-auto">
                         {isAdmin && (
                             <button
@@ -370,22 +380,26 @@ const UserManagementPage = () => {
                                 <span className="inline sm:hidden">Nuevo</span>
                             </button>
                         )}
-                        <button
-                            onClick={() => handleExport('pdf')}
-                            className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2.5 rounded-lg shadow-md text-white font-medium bg-red-600 hover:bg-red-700 transition duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                        >
-                            <FiDownload className="mr-2 h-5 w-5" />
-                            <span className="hidden sm:inline">PDF</span>
-                            <span className="inline sm:hidden">PDF</span>
-                        </button>
-                        <button
-                            onClick={() => handleExport('excel')}
-                            className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2.5 rounded-lg shadow-md text-white font-medium bg-green-600 hover:bg-green-700 transition duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-                        >
-                            <FiDownload className="mr-2 h-5 w-5" />
-                            <span className="hidden sm:inline">Excel</span>
-                            <span className="inline sm:hidden">Excel</span>
-                        </button>
+                        {isAdmin && (
+                            <>
+                                <button
+                                    onClick={() => handleExport('pdf')}
+                                    className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2.5 rounded-lg shadow-md text-white font-medium bg-red-600 hover:bg-red-700 transition duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                                >
+                                    <FiDownload className="mr-2 h-5 w-5" />
+                                    <span className="hidden sm:inline">PDF</span>
+                                    <span className="inline sm:hidden">PDF</span>
+                                </button>
+                                <button
+                                    onClick={() => handleExport('excel')}
+                                    className="flex-1 sm:flex-none flex items-center justify-center px-4 py-2.5 rounded-lg shadow-md text-white font-medium bg-green-600 hover:bg-green-700 transition duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                                >
+                                    <FiDownload className="mr-2 h-5 w-5" />
+                                    <span className="hidden sm:inline">Excel</span>
+                                    <span className="inline sm:hidden">Excel</span>
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
 

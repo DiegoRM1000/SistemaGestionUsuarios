@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import apiClient from '../../utils/axiosConfig';
-import { FiUsers, FiUserCheck, FiUserX, FiCalendar } from 'react-icons/fi';
+import { FiUsers, FiUserCheck, FiUserX, FiCalendar, FiDownload } from 'react-icons/fi';
 import { Bar, Pie } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -13,8 +13,9 @@ import {
     Tooltip,
     Legend
 } from 'chart.js';
+import { useAuth } from '../../context/AuthContext';
 
-// Registra los componentes de Chart.js que usarás
+// Registra los componentes de Chart.js que usarás... (sin cambios)
 ChartJS.register(
     CategoryScale,
     LinearScale,
@@ -29,6 +30,10 @@ const ReportsPage = () => {
     const [usersByRole, setUsersByRole] = useState(null);
     const [monthlyRegistrations, setMonthlyRegistrations] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    const { userRoles } = useAuth();
+    const isAdmin = userRoles.includes('ADMIN');
+    const isSupervisor = userRoles.includes('SUPERVISOR'); // CAMBIO: Variable para supervisor
 
     useEffect(() => {
         const fetchReportData = async () => {
@@ -51,24 +56,22 @@ const ReportsPage = () => {
         fetchReportData();
     }, []);
 
-    // Formatear el nombre del mes
+    // Formatear el nombre del mes... (sin cambios)
     const getMonthName = (monthNumber) => {
         const date = new Date();
         date.setMonth(monthNumber - 1);
         return date.toLocaleString('es-ES', { month: 'long' });
     };
 
-    // FUNCIÓN PARA MANEJAR LA EXPORTACIÓN DE ARCHIVOS
     const handleExport = async (type) => {
         try {
             const url = type === 'pdf' ? '/reports/export/pdf' : '/reports/export/excel';
             const fileName = type === 'pdf' ? 'reporte_usuarios.pdf' : 'reporte_usuarios.xlsx';
 
             const response = await apiClient.get(url, {
-                responseType: 'blob', // Importante para manejar archivos binarios
+                responseType: 'blob',
             });
 
-            // Crear un enlace temporal para la descarga
             const downloadUrl = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = downloadUrl;
@@ -76,13 +79,16 @@ const ReportsPage = () => {
             document.body.appendChild(link);
             link.click();
             link.remove();
-            window.URL.revokeObjectURL(downloadUrl); // Liberar memoria
+            window.URL.revokeObjectURL(downloadUrl);
 
             toast.success(`Reporte exportado como ${type.toUpperCase()} con éxito. 🎉`);
+
         } catch (error) {
-            console.error('Error al exportar el reporte:', error);
-            const errorMessage = error.response?.data?.message || 'Error al exportar. Asegúrate de ser administrador.';
-            toast.error(errorMessage);
+            if (error.response?.status !== 401) {
+                console.error('Error al exportar el reporte:', error);
+                const errorMessage = error.response?.data?.message || 'Error al exportar. Asegúrate de tener permisos para esta acción.';
+                toast.error(errorMessage);
+            }
         }
     };
 
@@ -106,7 +112,6 @@ const ReportsPage = () => {
         );
     }
 
-    // Preparar datos para el gráfico de pastel (Usuarios por Rol)
     const roleNames = Object.keys(usersByRole);
     const roleCounts = Object.values(usersByRole);
     const totalUsers = roleCounts.reduce((sum, count) => sum + count, 0);
@@ -118,9 +123,9 @@ const ReportsPage = () => {
                 label: 'Usuarios por Rol',
                 data: roleCounts,
                 backgroundColor: [
-                    'rgba(75, 192, 192, 0.6)', // ADMIN
-                    'rgba(255, 159, 64, 0.6)', // EMPLEADO
-                    'rgba(54, 162, 235, 0.6)', // SUPERVISOR
+                    'rgba(75, 192, 192, 0.6)',
+                    'rgba(255, 159, 64, 0.6)',
+                    'rgba(54, 162, 235, 0.6)',
                 ],
                 borderColor: [
                     'rgba(75, 192, 192, 1)',
@@ -132,7 +137,6 @@ const ReportsPage = () => {
         ],
     };
 
-    // Preparar datos para el gráfico de barras (Registros Mensuales)
     const monthlyLabels = monthlyRegistrations.map(row => `${getMonthName(row[0])} ${row[1]}`);
     const monthlyData = monthlyRegistrations.map(row => row[2]);
 
@@ -153,9 +157,7 @@ const ReportsPage = () => {
                 <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white">Reportes del Sistema</h1>
             </header>
 
-            {/* Sección de Paneles de KPIs */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {/* Panel de Usuarios Totales */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 flex items-center justify-between">
                     <div>
                         <h2 className="text-lg font-medium text-gray-500 dark:text-gray-400">Total de Usuarios</h2>
@@ -163,7 +165,6 @@ const ReportsPage = () => {
                     </div>
                     <FiUsers size={48} className="text-indigo-600 dark:text-indigo-400" />
                 </div>
-                {/* Panel de Usuarios Activos */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 flex items-center justify-between">
                     <div>
                         <h2 className="text-lg font-medium text-gray-500 dark:text-gray-400">Usuarios Activos</h2>
@@ -171,7 +172,6 @@ const ReportsPage = () => {
                     </div>
                     <FiUserCheck size={48} className="text-green-600 dark:text-green-400" />
                 </div>
-                {/* Panel de Usuarios Inactivos */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 flex items-center justify-between">
                     <div>
                         <h2 className="text-lg font-medium text-gray-500 dark:text-gray-400">Usuarios Inactivos</h2>
@@ -179,7 +179,6 @@ const ReportsPage = () => {
                     </div>
                     <FiUserX size={48} className="text-red-600 dark:text-red-400" />
                 </div>
-                {/* Panel de Registros Mensuales */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 flex items-center justify-between">
                     <div>
                         <h2 className="text-lg font-medium text-gray-500 dark:text-gray-400">Registros del Mes</h2>
@@ -191,16 +190,13 @@ const ReportsPage = () => {
                 </div>
             </div>
 
-            {/* Sección de Gráficos */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                {/* Gráfico de Usuarios por Rol */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Distribución de Usuarios por Rol</h2>
                     <div className="h-96 flex items-center justify-center">
                         <Pie data={pieChartData} options={{ maintainAspectRatio: false }} />
                     </div>
                 </div>
-                {/* Gráfico de Registros Mensuales */}
                 <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Registros de Usuarios (Mensual)</h2>
                     <div className="h-96 flex items-center justify-center">
@@ -209,7 +205,6 @@ const ReportsPage = () => {
                 </div>
             </div>
 
-            {/* Tabla Detallada con Totales por Rol */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Resumen Detallado por Rol</h2>
                 <div className="overflow-x-auto">
@@ -246,21 +241,25 @@ const ReportsPage = () => {
                 </div>
             </div>
 
-            {/* Funcionalidad para exportar */}
-            <div className="md:col-span-2 flex justify-end space-x-4 mt-6">
-                <button
-                    onClick={() => handleExport('pdf')}
-                    className="flex items-center justify-center px-6 py-2.5 rounded-lg text-white font-medium bg-red-600 hover:bg-red-700 transition duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                >
-                    Exportar a PDF
-                </button>
-                <button
-                    onClick={() => handleExport('excel')}
-                    className="flex items-center justify-center px-6 py-2.5 rounded-lg text-white font-medium bg-green-600 hover:bg-green-700 transition duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                >
-                    Exportar a Excel
-                </button>
-            </div>
+            {/* CAMBIO: Se muestra el botón si es ADMIN O SUPERVISOR */}
+            {(isAdmin || isSupervisor) && (
+                <div className="md:col-span-2 flex justify-end space-x-4 mt-6">
+                    <button
+                        onClick={() => handleExport('pdf')}
+                        className="flex items-center justify-center px-6 py-2.5 rounded-lg text-white font-medium bg-red-600 hover:bg-red-700 transition duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
+                        <FiDownload className="mr-2 h-5 w-5" />
+                        Exportar a PDF
+                    </button>
+                    <button
+                        onClick={() => handleExport('excel')}
+                        className="flex items-center justify-center px-6 py-2.5 rounded-lg text-white font-medium bg-green-600 hover:bg-green-700 transition duration-150 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                    >
+                        <FiDownload className="mr-2 h-5 w-5" />
+                        Exportar a Excel
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

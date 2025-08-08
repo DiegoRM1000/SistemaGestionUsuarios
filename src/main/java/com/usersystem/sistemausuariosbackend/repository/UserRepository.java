@@ -27,4 +27,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
             "FROM User u GROUP BY FUNCTION('MONTH', u.createdAt), FUNCTION('YEAR', u.createdAt) " +
             "ORDER BY FUNCTION('YEAR', u.createdAt) ASC, FUNCTION('MONTH', u.createdAt) ASC")
     List<Object[]> countMonthlyRegistrations();
+
+    // NUEVA CONSULTA
+    @Query("SELECT u FROM User u WHERE u.role.name = ?1")
+    List<User> findByRoleName(String roleName);
+    
+
 }
