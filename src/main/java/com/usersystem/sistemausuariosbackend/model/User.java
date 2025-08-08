@@ -1,14 +1,14 @@
 // src/main/java/com/usersystem/sistemausuariosbackend/model/User.java
+
 package com.usersystem.sistemausuariosbackend.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*; // Importa las anotaciones de validación
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-// import java.util.HashSet; // Ya no necesitamos Set
-// import java.util.Set;     // Ya no necesitamos Set
 
 @Entity
 @Table(name = "users", uniqueConstraints = {
@@ -23,33 +23,49 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "El nombre de usuario no puede estar vacío")
+    @Size(min = 3, max = 50, message = "El nombre de usuario debe tener entre 3 y 50 caracteres")
     @Column(unique = true, nullable = false, length = 50)
     private String username;
 
+    @NotBlank(message = "El email no puede estar vacío")
+    @Email(message = "El formato del email no es válido")
     @Column(unique = true, nullable = false, length = 100)
     private String email;
 
+    @NotBlank(message = "La contraseña no puede estar vacía")
+    @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
     @Column(nullable = false)
     private String password;
 
+    @NotBlank(message = "El nombre no puede estar vacío")
+    @Size(max = 50, message = "El nombre no puede exceder los 50 caracteres")
     @Column(name = "first_name", length = 50)
     private String firstName;
 
+    @NotBlank(message = "El apellido no puede estar vacío")
+    @Size(max = 50, message = "El apellido no puede exceder los 50 caracteres")
     @Column(name = "last_name", length = 50)
     private String lastName;
 
+    @Size(min = 8, max = 8, message = "El DNI debe tener entre 8 digitos")
+    @Pattern(regexp = "^[0-9]*$", message = "El DNI solo puede contener números")
     @Column(name = "dni", unique = true, length = 15)
     private String dni;
 
+    @Past(message = "La fecha de nacimiento debe ser en el pasado")
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
+    @Size(min = 9, max = 9, message = "El número de teléfono debe tener 9 dígitos")
+    @Pattern(regexp = "^[0-9]*$", message = "El número de teléfono solo puede contener números")
     @Column(name = "phone_number", length = 9)
     private String phoneNumber;
 
     @Column(nullable = false)
     private boolean enabled = true;
 
+    // Campos de 2FA y metadatos
     @Column(name = "two_factor_secret")
     private String twoFactorSecret;
 
@@ -62,11 +78,10 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    // --- CAMBIO CLAVE: Relación Many-to-One con Role ---
-    @ManyToOne(fetch = FetchType.EAGER, optional = false) // FetchType.EAGER para cargar el rol inmediatamente
-    @JoinColumn(name = "role_id", nullable = false) // Columna 'role_id' en la tabla 'users', no puede ser nula
-    private Role role; // Un solo objeto Role, no un Set
-    // --- FIN CAMBIO CLAVE ---
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "role_id", nullable = false)
+    @NotNull(message = "El rol no puede ser nulo")
+    private Role role;
 
     @PrePersist
     protected void onCreate() {

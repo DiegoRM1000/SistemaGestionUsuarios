@@ -1,3 +1,5 @@
+// src/main/java/com/usersystem/sistemausuariosbackend/controller/UserController.java
+
 package com.usersystem.sistemausuariosbackend.controller;
 
 import com.usersystem.sistemausuariosbackend.model.User;
@@ -5,19 +7,16 @@ import com.usersystem.sistemausuariosbackend.payload.UserResponseDto;
 import com.usersystem.sistemausuariosbackend.repository.UserRepository;
 import com.usersystem.sistemausuariosbackend.service.LogService;
 import com.usersystem.sistemausuariosbackend.service.UserService;
+import com.usersystem.sistemausuariosbackend.model.Role;
+import com.usersystem.sistemausuariosbackend.repository.RoleRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid; // Importar la anotación Valid
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
-import com.usersystem.sistemausuariosbackend.model.Role;
-import com.usersystem.sistemausuariosbackend.repository.RoleRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import java.util.Map;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-
+import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,7 +43,6 @@ public class UserController {
     }
 
     @GetMapping("/all")
-    // CORRECCIÓN: Se usa hasAnyAuthority para validar el rol sin el prefijo 'ROLE_'
     @PreAuthorize("hasAnyAuthority('ADMIN', 'SUPERVISOR')")
     public ResponseEntity<List<User>> getAllUsers() {
         List<User> users = userService.getAllUsers();
@@ -53,15 +51,14 @@ public class UserController {
 
     @GetMapping("/me")
     public ResponseEntity<UserResponseDto> getMyProfile(Authentication authentication) {
-        String username = authentication.getName();
-        return userRepository.findByEmail(username)
+        String email = authentication.getName();
+        return userRepository.findByEmail(email)
                 .map(UserResponseDto::fromUser)
                 .map(ResponseEntity::ok)
                 .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     @DeleteMapping("/{userId}")
-    // CORRECCIÓN: Se usa hasAuthority para validar el rol sin el prefijo 'ROLE_'
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Void> deleteUser(@PathVariable Long userId, Authentication authentication, HttpServletRequest request) {
         String ipAddress = request.getRemoteAddr();
@@ -71,17 +68,14 @@ public class UserController {
         Optional<User> userToDelete = userRepository.findById(userId);
         if (userToDelete.isPresent()) {
             userService.deleteUser(userId);
-
             String description = String.format("El usuario '%s' (ID: %d) ha sido eliminado.", userToDelete.get().getUsername(), userToDelete.get().getId());
             logService.log("USER_DELETED", currentUsername, currentUserId, userToDelete.get().getUsername(), userToDelete.get().getId(), description, "SUCCESS", ipAddress);
-
             return ResponseEntity.ok().build();
         }
         return ResponseEntity.notFound().build();
     }
 
     @PatchMapping("/{userId}/toggle-status")
-    // CORRECCIÓN: Se usa hasAuthority para validar el rol sin el prefijo 'ROLE_'
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<User> toggleUserStatus(@PathVariable Long userId, Authentication authentication, HttpServletRequest request) {
         String ipAddress = request.getRemoteAddr();
@@ -104,59 +98,34 @@ public class UserController {
 
     @PostMapping("/create")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<?> createUser(@RequestBody Map<String, String> registerRequest,
+    public ResponseEntity<?> createUser(@Valid @RequestBody User user,
                                         Authentication authentication,
                                         HttpServletRequest request) {
         String ipAddress = request.getRemoteAddr();
         String adminUsername = authentication.getName();
         Long adminUserId = userRepository.findByEmail(adminUsername).map(User::getId).orElse(null);
 
-        String username = registerRequest.get("username");
-        String email = registerRequest.get("email");
-        String password = registerRequest.get("password");
-        String firstName = registerRequest.get("firstName");
-        String lastName = registerRequest.get("lastName");
-        String dni = registerRequest.get("dni");
-        String dateOfBirthStr = registerRequest.get("dateOfBirth");
-        String phoneNumber = registerRequest.get("phoneNumber");
-        String roleName = registerRequest.get("role"); // Recibimos el nombre del rol
+        // La anotación @Valid se encarga de la validación inicial del objeto 'user'
 
-        if (username == null || email == null || password == null || roleName == null) {
-            logService.log("USER_CREATION_ATTEMPT", adminUsername, adminUserId, null, null,
-                    "Intento de creación de usuario fallido: datos incompletos.", "FAILURE", ipAddress);
-            return new ResponseEntity<>("Username, email, password, and role are required!", HttpStatus.BAD_REQUEST);
-        }
-
-        if (userRepository.findByUsername(username).isPresent() || userRepository.findByEmail(email).isPresent()) {
+        // Validaciones de negocio adicionales
+        if (userRepository.findByUsername(user.getUsername()).isPresent() || userRepository.findByEmail(user.getEmail()).isPresent()) {
             logService.log("USER_CREATION_ATTEMPT", adminUsername, adminUserId, null, null,
                     "Intento de creación de usuario fallido: Username o Email ya en uso.", "FAILURE", ipAddress);
             return new ResponseEntity<>("Username or Email is already taken!", HttpStatus.BAD_REQUEST);
         }
 
-        Role assignedRole = roleRepository.findByName(roleName)
+        Role assignedRole = roleRepository.findByName(user.getRole().getName())
                 .orElseThrow(() -> {
                     logService.log("USER_CREATION_ATTEMPT", adminUsername, adminUserId, null, null,
-                            "Intento de creación de usuario fallido: Rol '" + roleName + "' no encontrado.", "FAILURE", ipAddress);
-                    return new RuntimeException("Error: Role '" + roleName + "' not found.");
+                            "Intento de creación de usuario fallido: Rol '" + user.getRole().getName() + "' no encontrado.", "FAILURE", ipAddress);
+                    return new RuntimeException("Error: Role '" + user.getRole().getName() + "' not found.");
                 });
 
-        User user = new User();
-        user.setUsername(username);
-        user.setEmail(email);
-        user.setPassword(passwordEncoder.encode(password));
-        user.setFirstName(firstName);
-        user.setLastName(lastName);
-        user.setDni(dni);
-        if (dateOfBirthStr != null && !dateOfBirthStr.isEmpty()) {
-            user.setDateOfBirth(LocalDate.parse(dateOfBirthStr));
-        }
-        user.setPhoneNumber(phoneNumber);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         user.setEnabled(true);
-        user.setCreatedAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
-        user.setRole(assignedRole);
+        user.setRole(assignedRole); // Asegurar que el rol sea el que se encontró en la BD
 
-        userRepository.save(user);
+        userService.saveUser(user); // Asumo que tienes un método 'saveUser' en tu servicio
 
         logService.log("USER_CREATED", adminUsername, adminUserId, user.getUsername(), user.getId(),
                 "Nuevo usuario creado por administrador con rol " + assignedRole.getName(), "SUCCESS", ipAddress);
@@ -174,8 +143,8 @@ public class UserController {
 
     @PutMapping("/{userId}")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<User> updateUser(@PathVariable Long userId, @RequestBody Map<String, String> updateRequest) {
-        Optional<User> updatedUserOptional = userService.updateUser(userId, updateRequest);
+    public ResponseEntity<User> updateUser(@PathVariable Long userId, @Valid @RequestBody User user) {
+        Optional<User> updatedUserOptional = userService.updateUserWithValidation(userId, user); // Nuevo método en el servicio
         return updatedUserOptional.map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

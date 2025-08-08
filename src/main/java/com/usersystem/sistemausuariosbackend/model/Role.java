@@ -16,5 +16,5 @@ public class Role {
     private Long id;
 
     @Column(unique = true, nullable = false, length = 50) // Mapea a una columna, única, no nula, con longitud
-    private String name; // Ej: ROLE_ADMIN, ROLE_SUPERVISOR, ROLE_EMPLOYEE
+    private String name;
 }

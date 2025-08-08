@@ -1,12 +1,12 @@
 package com.usersystem.sistemausuariosbackend;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
 import com.usersystem.sistemausuariosbackend.model.Role;
 import com.usersystem.sistemausuariosbackend.model.User;
 import com.usersystem.sistemausuariosbackend.repository.RoleRepository;
 import com.usersystem.sistemausuariosbackend.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -49,59 +49,81 @@ public class SistemaUsuariosBackendApplication {
 					});
 
 
-			// 3. Crear usuarios de prueba si no existen con todos los datos
-			if (userRepository.findByUsername("admin").isEmpty()) {
+			// 2. Crear usuarios de prueba si no existen
+			// Usuario ADMIN con datos completos y válidos
+			if (userRepository.findByUsername("MarcelR").isEmpty()) {
 				User adminUser = new User();
-				adminUser.setUsername("admin");
-				adminUser.setEmail("admin@example.com");
-				adminUser.setPassword(passwordEncoder.encode("adminpassword"));
-				adminUser.setFirstName("Super");
-				adminUser.setLastName("Admin");
-				adminUser.setDni("12345678");
-				adminUser.setDateOfBirth(LocalDate.of(1985, 5, 15));
-				adminUser.setPhoneNumber("987654321");
+				adminUser.setUsername("MarcelR");
+				adminUser.setEmail("marcelita@gmail.com");
+				adminUser.setPassword(passwordEncoder.encode("MAR@ssword123")); // Contraseña más segura
+				adminUser.setFirstName("Marcela");
+				adminUser.setLastName("Rojas");
+				adminUser.setDni("87654321");
+				adminUser.setDateOfBirth(LocalDate.of(1982, 3, 10));
+				adminUser.setPhoneNumber("998877665");
 				adminUser.setEnabled(true);
 				adminUser.setCreatedAt(LocalDateTime.now());
 				adminUser.setUpdatedAt(LocalDateTime.now());
 				adminUser.setRole(adminRole);
 				userRepository.save(adminUser);
-				System.out.println("Usuario 'admin' creado con rol ADMIN.");
+				System.out.println("Usuario 'superadmin' creado con rol ADMIN.");
 			}
 
-			if (userRepository.findByUsername("empleado").isEmpty()) {
-				User employeeUser = new User();
-				employeeUser.setUsername("empleado");
-				employeeUser.setEmail("empleado@example.com");
-				employeeUser.setPassword(passwordEncoder.encode("password"));
-				employeeUser.setFirstName("Juan");
-				employeeUser.setLastName("Perez");
-				employeeUser.setDni("87654321");
-				employeeUser.setDateOfBirth(LocalDate.of(1990, 10, 20));
-				employeeUser.setPhoneNumber("912345678");
-				employeeUser.setEnabled(true);
-				employeeUser.setCreatedAt(LocalDateTime.now());
-				employeeUser.setUpdatedAt(LocalDateTime.now());
-				employeeUser.setRole(employeeRole);
-				userRepository.save(employeeUser);
-				System.out.println("Usuario 'empleado' creado con rol EMPLEADO.");
-			}
-
-			if (userRepository.findByUsername("supervisor").isEmpty()) {
+			// Usuario SUPERVISOR con datos completos y válidos
+			if (userRepository.findByUsername("AndreSuper").isEmpty()) {
 				User supervisorUser = new User();
-				supervisorUser.setUsername("supervisor");
-				supervisorUser.setEmail("supervisor@example.com");
-				supervisorUser.setPassword(passwordEncoder.encode("password"));
-				supervisorUser.setFirstName("Ana");
-				supervisorUser.setLastName("Gomez");
-				supervisorUser.setDni("45678901");
-				supervisorUser.setDateOfBirth(LocalDate.of(1988, 7, 25));
+				supervisorUser.setUsername("AndreSuper");
+				supervisorUser.setEmail("andreC@gmail.com");
+				supervisorUser.setPassword(passwordEncoder.encode("AndresSPVP@ss456"));
+				supervisorUser.setFirstName("Andres");
+				supervisorUser.setLastName("Campos");
+				supervisorUser.setDni("12345678");
+				supervisorUser.setDateOfBirth(LocalDate.of(1989, 7, 25));
 				supervisorUser.setPhoneNumber("954321098");
 				supervisorUser.setEnabled(true);
 				supervisorUser.setCreatedAt(LocalDateTime.now());
 				supervisorUser.setUpdatedAt(LocalDateTime.now());
 				supervisorUser.setRole(supervisorRole);
 				userRepository.save(supervisorUser);
-				System.out.println("Usuario 'supervisor' creado con rol SUPERVISOR.");
+				System.out.println("Usuario 'supervisor_jefe' creado con rol SUPERVISOR.");
+			}
+
+			// Usuario EMPLEADO con datos completos y válidos
+			if (userRepository.findByUsername("LauF").isEmpty()) {
+				User employeeUser = new User();
+				employeeUser.setUsername("LauF");
+				employeeUser.setEmail("lauF@gmail.com");
+				employeeUser.setPassword(passwordEncoder.encode("EmpLauraP@ss789"));
+				employeeUser.setFirstName("Laura");
+				employeeUser.setLastName("Fernandez");
+				employeeUser.setDni("45678901");
+				employeeUser.setDateOfBirth(LocalDate.of(1995, 11, 5));
+				employeeUser.setPhoneNumber("912345678");
+				employeeUser.setEnabled(true);
+				employeeUser.setCreatedAt(LocalDateTime.now());
+				employeeUser.setUpdatedAt(LocalDateTime.now());
+				employeeUser.setRole(employeeRole);
+				userRepository.save(employeeUser);
+				System.out.println("Usuario 'empleado_general' creado con rol EMPLEADO.");
+			}
+
+			// Un usuario adicional para tener más datos en la tabla
+			if (userRepository.findByUsername("LucasVR").isEmpty()) {
+				User employeeUser2 = new User();
+				employeeUser2.setUsername("LucasVR");
+				employeeUser2.setEmail("lucasvr@gmail.com");
+				employeeUser2.setPassword(passwordEncoder.encode("lucasVrP@ss123"));
+				employeeUser2.setFirstName("Lucas");
+				employeeUser2.setLastName("Vazquez");
+				employeeUser2.setDni("98765432");
+				employeeUser2.setDateOfBirth(LocalDate.of(1992, 1, 30));
+				employeeUser2.setPhoneNumber("987612345");
+				employeeUser2.setEnabled(false); // Este usuario estará inactivo por defecto
+				employeeUser2.setCreatedAt(LocalDateTime.now());
+				employeeUser2.setUpdatedAt(LocalDateTime.now());
+				employeeUser2.setRole(employeeRole);
+				userRepository.save(employeeUser2);
+				System.out.println("Usuario 'otro_empleado' creado con rol EMPLEADO.");
 			}
 		};
 	}
